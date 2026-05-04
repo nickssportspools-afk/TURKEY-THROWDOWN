@@ -46,9 +46,9 @@ In your repo on GitHub:
 
 Wait ~30 seconds. Your site will be live at `https://nickssportspools-afk.github.io/TURKEY-THROWDOWN/`.
 
-### 4. Install the Apps Script bridge (for the Admin tab)
+### 4. Install the Apps Script bridge (Admin tab + auto-score-fetch)
 
-This is what lets you type final scores on the website and have them written into the Sheet.
+The same script does two things: lets the website's Admin tab write scores to the Sheet, AND auto-fetches finals from ESPN every 15 minutes so most scores update without you doing anything.
 
 1. Open your Google Sheet → **Extensions** → **Apps Script**.
 2. Delete whatever's in `Code.gs` and paste the entire contents of `apps-script.gs`.
@@ -56,13 +56,38 @@ This is what lets you type final scores on the website and have them written int
 4. Click the **Save** icon (or Ctrl/Cmd-S).
 5. Click **Deploy** (top right) → **New deployment**.
    - Click the gear icon → choose **Web app**.
-   - **Description:** "Turkey Throwdown score writer"
+   - **Description:** "Turkey Throwdown bridge"
    - **Execute as:** Me
    - **Who has access:** Anyone
    - Click **Deploy**. Authorize the prompt.
 6. **Copy the Web app URL** that appears (it ends in `/exec`).
 7. Open `index.html`, find the line `const SCRIPT_URL = "";` near the top of the `<script>` block, paste the URL between the quotes. Save and re-push.
 8. On the live site, go to the **Admin** tab and paste your `ADMIN_KEY` into the "Admin key" field. The browser remembers it locally.
+
+### 5. Set up the auto-fetch schedule
+
+This is what makes scores appear on the Sheet automatically as games end.
+
+1. Still in the Apps Script editor, click the **alarm-clock icon** (Triggers) in the left sidebar.
+2. Click **+ Add Trigger** at the bottom right.
+3. Configure the trigger:
+   - **Choose which function to run:** `fetchAndUpdateScores`
+   - **Choose deployment:** Head
+   - **Select event source:** Time-driven
+   - **Select type of time-based trigger:** Minutes timer
+   - **Select minute interval:** Every 15 minutes
+4. Click **Save**. Authorize when prompted (Google may flag it as "unverified" — click "Advanced → Go to (project name)" to proceed).
+
+The script now runs every 15 minutes. For each game on your Games tab where score columns are still empty, it'll pull the final from ESPN if available and write it in.
+
+**Coverage:**
+- **NFL, College Football, NBA, NHL, MLS** — fetched from ESPN's free scoreboard API.
+- **AHL** — fetched from HockeyTech (the AHL's own stats backend, same data that powers theahl.com's score widgets).
+- If either source goes down or the team-name match fails, that game just stays empty until the next 15-minute run, OR until you enter it manually via the Admin tab.
+
+**Manual entries always win.** If you've already typed a score, the auto-fetcher won't touch that row.
+
+**Watching it work:** in the Apps Script editor, click the bug icon ("Executions") in the left sidebar to see the log of each run. Each one logs how many games it updated.
 
 ## Day-to-day use
 
