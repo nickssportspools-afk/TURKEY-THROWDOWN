@@ -1,0 +1,519 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Turkey Throwdown 2026</title>
+<meta name="description" content="2026 Turkey Throwdown — Thanksgiving weekend pick'em pool">
+<meta name="theme-color" content="#20124d">
+<style>
+  /* ----------------- design tokens ----------------- */
+  :root {
+    --navy: #20124d;
+    --navy-2: #2c1c66;
+    --gold: #d4a017;
+    --green: #006100;
+    --green-bg: #c6efce;
+    --red: #9c0006;
+    --red-bg: #ffc7ce;
+    --gray: #595959;
+    --gray-bg: #f1f1f1;
+    --line: #e3e3e8;
+    --bg: #fafaf7;
+    --card: #ffffff;
+    --shadow: 0 1px 2px rgba(0,0,0,.04), 0 4px 12px rgba(32,18,77,.06);
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: #14123a;
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+                font-size: 15px; line-height: 1.45; -webkit-font-smoothing: antialiased; }
+  a { color: var(--navy); }
+
+  /* ----------------- header ----------------- */
+  header.app-header {
+    background: linear-gradient(135deg, var(--navy), var(--navy-2));
+    color: #fff;
+    padding: 18px 16px 0;
+    box-shadow: var(--shadow);
+  }
+  .app-title { display: flex; align-items: baseline; gap: 10px; max-width: 1100px; margin: 0 auto; }
+  .app-title h1 { margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -.01em; }
+  .app-title .year { font-size: 13px; opacity: .7; font-weight: 500; }
+  .meta-row {
+    max-width: 1100px; margin: 6px auto 0; padding-bottom: 12px;
+    display: flex; flex-wrap: wrap; gap: 10px 18px; font-size: 12px; opacity: .85;
+  }
+  .meta-row span b { font-weight: 600; opacity: 1; }
+  .last-update { margin-left: auto; }
+
+  /* ----------------- tabs ----------------- */
+  nav.tabs {
+    background: linear-gradient(135deg, var(--navy), var(--navy-2));
+    border-bottom: 3px solid var(--gold);
+    position: sticky; top: 0; z-index: 10;
+  }
+  nav.tabs .tabs-inner {
+    display: flex; max-width: 1100px; margin: 0 auto;
+    overflow-x: auto; -webkit-overflow-scrolling: touch;
+  }
+  nav.tabs button {
+    flex: 1 0 auto; background: transparent; border: 0; color: rgba(255,255,255,.72);
+    padding: 12px 16px; font-size: 14px; font-weight: 600; cursor: pointer;
+    border-bottom: 3px solid transparent; margin-bottom: -3px; min-width: 92px;
+    transition: color .15s, border-color .15s, background .15s;
+  }
+  nav.tabs button:hover { color: #fff; }
+  nav.tabs button.active { color: #fff; border-bottom-color: var(--gold); background: rgba(255,255,255,.05); }
+
+  /* ----------------- main ----------------- */
+  main { max-width: 1100px; margin: 0 auto; padding: 16px; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  h2 { margin: 0 0 8px; font-size: 18px; }
+  .subtle { color: var(--gray); font-size: 13px; margin: 0 0 16px; }
+
+  /* ----------------- generic table ----------------- */
+  .card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { background: var(--navy); color: #fff; font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; position: sticky; top: 0; }
+  tr:last-child td { border-bottom: 0; }
+  tr:hover td { background: #faf8f1; }
+
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700;
+          letter-spacing: .03em; text-transform: uppercase; }
+  .pill-NFL { background: #fff3cd; color: #854d0e; }
+  .pill-CFB { background: #d1fadf; color: #136c2e; }
+  .pill-NBA { background: #ffd5b3; color: #9a3a0e; }
+  .pill-NHL { background: #cee4f5; color: #1e3a5f; }
+  .pill-CBB { background: #e9defa; color: #4b2789; }
+  .pill-AHL { background: #b3d4ed; color: #15355a; }
+  .pill-MLS { background: #c5e7a8; color: #1f4d11; }
+
+  .winner { color: var(--green); font-weight: 700; }
+  .winner-team { background: var(--green-bg); color: var(--green); padding: 3px 8px; border-radius: 6px; font-weight: 700; }
+  .push-team { background: var(--gray-bg); color: var(--gray); padding: 3px 8px; border-radius: 6px; font-weight: 600; font-style: italic; }
+  .pending { color: var(--gray); font-style: italic; }
+
+  /* leaderboard rows */
+  .lb-rank { width: 52px; text-align: center; font-weight: 800; font-size: 16px; color: var(--navy); }
+  .lb-rank.gold { color: var(--gold); }
+  .lb-rank.silver { color: #888; }
+  .lb-rank.bronze { color: #b06a2e; }
+  .lb-name { font-weight: 600; }
+  .lb-pts { width: 80px; text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
+  .lb-rem { width: 110px; text-align: right; font-variant-numeric: tabular-nums; color: var(--gray); }
+  .lb-pay { width: 90px; text-align: right; font-variant-numeric: tabular-nums; color: var(--green); font-weight: 600; }
+
+  /* picks grid */
+  .pick-correct { background: var(--green-bg); color: var(--green); font-weight: 700; }
+  .pick-wrong   { background: var(--red-bg); color: var(--red); }
+  .pick-push    { background: var(--gray-bg); color: var(--gray); font-style: italic; }
+  .pick-pending { color: var(--gray); }
+
+  /* admin */
+  .admin-form { display: grid; grid-template-columns: minmax(0,1fr) auto auto auto; gap: 8px; align-items: center;
+                padding: 12px; border-bottom: 1px solid var(--line); }
+  .admin-form input[type="number"] { width: 70px; padding: 8px; font-size: 14px; border: 1px solid var(--line); border-radius: 6px; }
+  .admin-form .matchup { font-weight: 600; }
+  .admin-form .save-btn {
+    padding: 8px 14px; background: var(--navy); color: #fff; border: 0; border-radius: 6px;
+    font-weight: 600; cursor: pointer; font-size: 13px;
+  }
+  .admin-form .save-btn:hover { background: var(--navy-2); }
+  .admin-form .save-btn:disabled { opacity: .5; cursor: not-allowed; }
+  .admin-form .save-btn.saved { background: var(--green); }
+  .admin-form .save-btn.error { background: var(--red); }
+  .admin-key {
+    margin: 16px 0; padding: 14px; background: #fff7d6; border-left: 4px solid var(--gold); border-radius: 6px;
+    font-size: 13px;
+  }
+  .admin-key input { width: 100%; padding: 8px; margin-top: 6px; border: 1px solid var(--line); border-radius: 6px; font-family: ui-monospace, monospace; font-size: 13px; }
+
+  /* misc */
+  .empty { padding: 60px 20px; text-align: center; color: var(--gray); }
+  .err   { padding: 20px; background: var(--red-bg); color: var(--red); border-radius: var(--radius); }
+  .refresh-btn { background: rgba(255,255,255,.12); color: #fff; border: 1px solid rgba(255,255,255,.3);
+                 padding: 4px 12px; font-size: 12px; border-radius: 6px; cursor: pointer; }
+  .refresh-btn:hover { background: rgba(255,255,255,.22); }
+
+  @media (max-width: 600px) {
+    .app-title h1 { font-size: 18px; }
+    th, td { padding: 8px 10px; font-size: 13px; }
+    nav.tabs button { padding: 10px 12px; font-size: 13px; }
+    .meta-row { gap: 6px 12px; font-size: 11px; }
+    .admin-form { grid-template-columns: 1fr; gap: 4px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="app-title">
+    <h1>🦃 Turkey Throwdown</h1>
+    <span class="year">Thanksgiving 2026</span>
+  </div>
+  <div class="meta-row">
+    <span><b>Entry:</b> $20</span>
+    <span><b>Deadline:</b> Wed Nov 25, midnight CT</span>
+    <span><b>Scoring:</b> 1 pt per correct ATS pick</span>
+    <span><b>Total games:</b> 25</span>
+    <span class="last-update" id="last-update">Loading…</span>
+    <button class="refresh-btn" id="refresh-btn" title="Refresh now">⟳</button>
+  </div>
+</header>
+
+<nav class="tabs">
+  <div class="tabs-inner" role="tablist">
+    <button data-tab="games"     class="active" role="tab">Games</button>
+    <button data-tab="standings"            role="tab">Standings</button>
+    <button data-tab="picks"                role="tab">Picks</button>
+    <button data-tab="rules"                role="tab">Rules</button>
+    <button data-tab="admin"                role="tab">Admin</button>
+  </div>
+</nav>
+
+<main>
+  <section id="panel-games" class="panel active">
+    <h2>Games</h2>
+    <p class="subtle">Schedule, spreads, and ATS results. Refreshes automatically.</p>
+    <div class="card"><div class="table-wrap" id="games-tbl"><div class="empty">Loading games…</div></div></div>
+  </section>
+
+  <section id="panel-standings" class="panel">
+    <h2>Standings</h2>
+    <p class="subtle">Live leaderboard. Possible Remaining = current points + ungraded games where you've made a pick.</p>
+    <div class="card"><div class="table-wrap" id="standings-tbl"><div class="empty">Loading standings…</div></div></div>
+  </section>
+
+  <section id="panel-picks" class="panel">
+    <h2>Picks</h2>
+    <p class="subtle">Each entrant's picks. Green = covered, red = missed, gray = push, blank = ungraded.</p>
+    <div class="card"><div class="table-wrap" id="picks-tbl"><div class="empty">Loading picks…</div></div></div>
+  </section>
+
+  <section id="panel-rules" class="panel">
+    <h2>Rules</h2>
+    <div class="card" style="padding:18px;line-height:1.6">
+      <p><b>Entry fee:</b> $20 per entry — enter as many times as you like.</p>
+      <p><b>Deadline:</b> Wednesday Nov 25, 2026 — Midnight Central Time (1 AM ET, 11 PM MT, 10 PM PT).</p>
+      <p><b>Scoring:</b> 1 point per correct pick against the spread. 0 on a miss. 0 on a push (all spreads end in .5, so pushes shouldn't occur).</p>
+      <p><b>Payouts:</b> 60% / 25% / 15% to 1st / 2nd / 3rd. Adjusted based on # of entries.</p>
+      <p><b>Tiebreaker:</b> Total combined points scored in the Monday Night Football game (closest without going over).</p>
+      <p><b>How to enter:</b> Open the Google Sheet link, find a NAME column on the Picks tab, type your name in the header, fill in the dropdowns. Email shared separately.</p>
+    </div>
+  </section>
+
+  <section id="panel-admin" class="panel">
+    <h2>Admin</h2>
+    <p class="subtle">Type final scores; they'll be written to the Google Sheet. Requires the secret key (set when you deployed the Apps Script).</p>
+    <div class="admin-key">
+      <label for="admin-key"><b>Admin key</b> (stored only in your browser):</label>
+      <input id="admin-key" type="password" placeholder="paste key here" autocomplete="off">
+    </div>
+    <div class="card" id="admin-form-wrap">
+      <div class="empty">Loading games…</div>
+    </div>
+  </section>
+</main>
+
+<script>
+  // ===================================================================
+  // CONFIG — only change SHEET_ID and SCRIPT_URL when those change.
+  // ===================================================================
+  const SHEET_ID  = "15P_r3oaAu0Q1izY5B3cEDI98bPoX63V4DWlrC-uOu6s";
+  const SCRIPT_URL = "";      // <-- after deploying the Apps Script Web App, paste its /exec URL here
+  const REFRESH_MS = 60_000;  // 1 minute
+
+  // ===================================================================
+  // CSV fetch + parse (no external libraries; the gviz endpoint already
+  // returns CSV with proper quoting)
+  // ===================================================================
+  function gvizUrl(sheetName) {
+    return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
+  }
+
+  // RFC-4180 CSV parser
+  function parseCSV(text) {
+    const rows = [];
+    let row = [], cell = "", inQ = false, i = 0;
+    while (i < text.length) {
+      const c = text[i];
+      if (inQ) {
+        if (c === '"' && text[i+1] === '"') { cell += '"'; i += 2; continue; }
+        if (c === '"') { inQ = false; i++; continue; }
+        cell += c; i++; continue;
+      }
+      if (c === '"') { inQ = true; i++; continue; }
+      if (c === ',') { row.push(cell); cell = ""; i++; continue; }
+      if (c === '\r') { i++; continue; }
+      if (c === '\n') { row.push(cell); rows.push(row); row = []; cell = ""; i++; continue; }
+      cell += c; i++;
+    }
+    if (cell.length || row.length) { row.push(cell); rows.push(row); }
+    return rows;
+  }
+
+  async function fetchSheet(sheetName) {
+    const r = await fetch(gvizUrl(sheetName), { cache: "no-store" });
+    if (!r.ok) throw new Error(`Fetch ${sheetName}: ${r.status}`);
+    return parseCSV(await r.text());
+  }
+
+  // ===================================================================
+  // RENDERERS
+  // ===================================================================
+  function renderGames(rows) {
+    // Games sheet layout:
+    //   row 4 (idx 3) headers: # Date Day Sport Favorite Spread Underdog FavScore DogScore ATSWinner
+    //   rows 5..29 (idx 4..28) game rows
+    if (!rows.length) return `<div class="empty">No data.</div>`;
+    let html = `<table>
+      <thead><tr>
+        <th>#</th><th>Day</th><th>Sport</th><th>Favorite</th><th>Spread</th>
+        <th>Underdog</th><th>Score</th><th>Cover</th>
+      </tr></thead><tbody>`;
+    for (let i = 4; i < rows.length && i < 29; i++) {
+      const r = rows[i];
+      if (!r || !r[0]) continue;
+      const num = r[0], day = r[2] || "", sport = (r[3] || "").trim();
+      const fav = r[4] || "", spread = r[5] || "", dog = r[6] || "";
+      const fs = r[7] || "", ds = r[8] || "", ats = (r[9] || "").trim();
+      const score = (fs && ds) ? `${fs}–${ds}` : `<span class="pending">—</span>`;
+      let cover;
+      if (!ats) cover = `<span class="pending">—</span>`;
+      else if (ats === "PUSH") cover = `<span class="push-team">PUSH</span>`;
+      else cover = `<span class="winner-team">${ats}</span>`;
+      html += `<tr>
+        <td>${num}</td><td>${day}</td>
+        <td><span class="pill pill-${sport}">${sport}</span></td>
+        <td>${fav}</td>
+        <td>−${spread}</td>
+        <td>${dog}</td>
+        <td>${score}</td>
+        <td>${cover}</td>
+      </tr>`;
+    }
+    return html + `</tbody></table>`;
+  }
+
+  function renderStandings(rows) {
+    // Standings layout:
+    //   row 4 (idx 3): PLACE | Player | Points | Possible Remaining | Payout
+    //   rows 5..104 (idx 4..103) leaderboard rows
+    if (!rows.length) return `<div class="empty">No data.</div>`;
+    // Filter to entries with a name
+    const entries = [];
+    for (let i = 4; i < rows.length; i++) {
+      const r = rows[i];
+      if (!r) continue;
+      const name = (r[1] || "").trim();
+      if (!name || name === "NAME") continue;
+      const place = parseInt(r[0]) || 0;
+      const pts   = parseFloat(r[2]) || 0;
+      const rem   = r[3] !== undefined && r[3] !== "" ? parseFloat(r[3]) : null;
+      const pay   = (r[4] || "").trim();
+      entries.push({ place, name, pts, rem, pay });
+    }
+    if (!entries.length) return `<div class="empty">No entries yet.</div>`;
+    entries.sort((a, b) => (b.pts - a.pts) || a.name.localeCompare(b.name));
+
+    let html = `<table>
+      <thead><tr>
+        <th>Place</th><th>Player</th><th style="text-align:right">Pts</th>
+        <th style="text-align:right">Possible</th><th style="text-align:right">Payout</th>
+      </tr></thead><tbody>`;
+    for (const e of entries) {
+      const cls = e.place === 1 ? "gold" : e.place === 2 ? "silver" : e.place === 3 ? "bronze" : "";
+      const placeDisp = e.place ? e.place : "—";
+      const remDisp = e.rem !== null ? e.rem : "";
+      html += `<tr>
+        <td class="lb-rank ${cls}">${placeDisp}</td>
+        <td class="lb-name">${e.name}</td>
+        <td class="lb-pts">${e.pts}</td>
+        <td class="lb-rem">${remDisp}</td>
+        <td class="lb-pay">${e.pay || ""}</td>
+      </tr>`;
+    }
+    return html + `</tbody></table>`;
+  }
+
+  function renderPicks(picksRows, gamesRows) {
+    // Picks layout:
+    //   row 6 (idx 5): # | Matchup | Spread | NAME × N
+    //   rows 7..31 (idx 6..30): pick cells for games 1..25
+    if (!picksRows.length) return `<div class="empty">No data.</div>`;
+    const hdr = picksRows[5] || [];
+    // Find NAME columns that have an actual non-NAME label
+    const nameCols = [];
+    for (let c = 3; c < hdr.length; c++) {
+      const v = (hdr[c] || "").trim();
+      if (v && v !== "NAME") nameCols.push({ col: c, name: v });
+    }
+    if (!nameCols.length) return `<div class="empty">No entrants yet — players haven't put their names in the sheet.</div>`;
+
+    // Build ATS map: game# → ats winner (from games sheet)
+    const atsByGame = {};
+    if (gamesRows && gamesRows.length) {
+      for (let i = 4; i < gamesRows.length && i < 29; i++) {
+        const r = gamesRows[i];
+        if (!r || !r[0]) continue;
+        atsByGame[parseInt(r[0])] = (r[9] || "").trim();
+      }
+    }
+
+    let html = `<table>
+      <thead><tr>
+        <th>#</th><th>Matchup</th><th>Spread</th>`;
+    for (const nc of nameCols) html += `<th>${nc.name}</th>`;
+    html += `</tr></thead><tbody>`;
+
+    for (let i = 6; i <= 30 && i < picksRows.length; i++) {
+      const r = picksRows[i];
+      if (!r) continue;
+      const gnum = parseInt(r[0]);
+      const matchup = r[1] || "";
+      const spread = r[2] || "";
+      const ats = atsByGame[gnum] || "";
+      html += `<tr><td>${gnum}</td><td>${matchup}</td><td>−${spread}</td>`;
+      for (const nc of nameCols) {
+        const pick = (r[nc.col] || "").trim();
+        let cls = "pick-pending";
+        if (pick && ats) {
+          if (ats === "PUSH") cls = "pick-push";
+          else if (ats === pick) cls = "pick-correct";
+          else cls = "pick-wrong";
+        }
+        html += `<td class="${cls}">${pick || "—"}</td>`;
+      }
+      html += `</tr>`;
+    }
+    return html + `</tbody></table>`;
+  }
+
+  function renderAdminForm(gamesRows) {
+    if (!gamesRows.length) return `<div class="empty">No games loaded.</div>`;
+    const items = [];
+    for (let i = 4; i < gamesRows.length && i < 29; i++) {
+      const r = gamesRows[i];
+      if (!r || !r[0]) continue;
+      items.push({
+        gnum: parseInt(r[0]),
+        day: r[2] || "",
+        sport: (r[3] || "").trim(),
+        fav: r[4] || "",
+        spread: r[5] || "",
+        dog: r[6] || "",
+        fs: r[7] || "",
+        ds: r[8] || "",
+      });
+    }
+    let html = "";
+    for (const g of items) {
+      html += `<div class="admin-form" data-game="${g.gnum}">
+        <div>
+          <span class="pill pill-${g.sport}">${g.sport}</span>
+          <span class="matchup">G${g.gnum}: ${g.fav} (−${g.spread}) vs ${g.dog}</span>
+        </div>
+        <input type="number" inputmode="numeric" placeholder="Fav" class="fav-score" value="${g.fs}">
+        <input type="number" inputmode="numeric" placeholder="Dog" class="dog-score" value="${g.ds}">
+        <button class="save-btn" data-game="${g.gnum}">Save</button>
+      </div>`;
+    }
+    return html;
+  }
+
+  // ===================================================================
+  // ADMIN — POST score updates to the Apps Script Web App
+  // ===================================================================
+  async function postScore(gameNum, favScore, dogScore) {
+    if (!SCRIPT_URL) throw new Error("SCRIPT_URL not configured. Deploy the Apps Script and paste its /exec URL into index.html.");
+    const key = document.getElementById("admin-key").value.trim();
+    if (!key) throw new Error("Enter your admin key first.");
+    const body = JSON.stringify({ key, gameNum, favScore: Number(favScore), dogScore: Number(dogScore) });
+    // Apps Script doPost requires 'text/plain' to avoid CORS preflight quirks
+    const r = await fetch(SCRIPT_URL, { method: "POST", body, headers: { "Content-Type": "text/plain" } });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || !j.ok) throw new Error(j.error || `HTTP ${r.status}`);
+    return j;
+  }
+
+  function wireAdminButtons() {
+    document.querySelectorAll("#admin-form-wrap .save-btn").forEach(btn => {
+      btn.onclick = async () => {
+        const wrap = btn.closest(".admin-form");
+        const fav = wrap.querySelector(".fav-score").value;
+        const dog = wrap.querySelector(".dog-score").value;
+        const gnum = parseInt(btn.dataset.game);
+        if (fav === "" || dog === "") { alert("Enter both scores."); return; }
+        btn.disabled = true; btn.textContent = "Saving…"; btn.classList.remove("saved","error");
+        try {
+          await postScore(gnum, fav, dog);
+          btn.textContent = "Saved ✓"; btn.classList.add("saved");
+          setTimeout(() => { btn.textContent = "Save"; btn.classList.remove("saved"); btn.disabled = false; }, 1500);
+          loadAll();   // refresh other tabs
+        } catch (e) {
+          btn.textContent = "Failed"; btn.classList.add("error"); btn.disabled = false;
+          setTimeout(() => { btn.textContent = "Save"; btn.classList.remove("error"); }, 2500);
+          alert(e.message);
+        }
+      };
+    });
+  }
+
+  // Persist admin key in localStorage so user doesn't retype each visit
+  const keyInput = document.getElementById("admin-key");
+  keyInput.value = localStorage.getItem("ttd-admin-key") || "";
+  keyInput.addEventListener("input", () => localStorage.setItem("ttd-admin-key", keyInput.value));
+
+  // ===================================================================
+  // TABS
+  // ===================================================================
+  document.querySelectorAll("nav.tabs button").forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll("nav.tabs button").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+      btn.classList.add("active");
+      document.getElementById("panel-" + btn.dataset.tab).classList.add("active");
+    };
+  });
+
+  // ===================================================================
+  // LOAD CYCLE
+  // ===================================================================
+  let cache = { games: null, standings: null, picks: null };
+
+  async function loadAll() {
+    try {
+      const [games, standings, picks] = await Promise.all([
+        fetchSheet("Games"),
+        fetchSheet("Standings"),
+        fetchSheet("Picks"),
+      ]);
+      cache = { games, standings, picks };
+      document.getElementById("games-tbl").innerHTML     = renderGames(games);
+      document.getElementById("standings-tbl").innerHTML = renderStandings(standings);
+      document.getElementById("picks-tbl").innerHTML     = renderPicks(picks, games);
+      document.getElementById("admin-form-wrap").innerHTML = renderAdminForm(games);
+      wireAdminButtons();
+      const t = new Date();
+      document.getElementById("last-update").textContent =
+        "Updated " + t.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    } catch (e) {
+      console.error(e);
+      const msg = `<div class="err">Failed to load: ${e.message}. The Sheet may not be shared as "Anyone with the link" or its tabs may not be named exactly Games / Picks / Standings.</div>`;
+      ["games-tbl","standings-tbl","picks-tbl","admin-form-wrap"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el && el.querySelector(".empty")) el.innerHTML = msg;
+      });
+    }
+  }
+
+  document.getElementById("refresh-btn").onclick = loadAll;
+  loadAll();
+  setInterval(loadAll, REFRESH_MS);
+</script>
+</body>
+</html>
