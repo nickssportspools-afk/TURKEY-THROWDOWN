@@ -167,34 +167,16 @@
 
 <nav class="tabs">
   <div class="tabs-inner" role="tablist">
-    <button data-tab="games"     class="active" role="tab">Games</button>
-    <button data-tab="standings"            role="tab">Standings</button>
+    <button data-tab="rules"     class="active" role="tab">Rules</button>
     <button data-tab="picks"                role="tab">Picks</button>
-    <button data-tab="rules"                role="tab">Rules</button>
+    <button data-tab="games"                role="tab">Games</button>
+    <button data-tab="standings"            role="tab">Standings</button>
     <button data-tab="admin"                role="tab">Admin</button>
   </div>
 </nav>
 
 <main>
-  <section id="panel-games" class="panel active">
-    <h2>Games</h2>
-    <p class="subtle">Schedule, spreads, and ATS results. Refreshes automatically.</p>
-    <div class="card"><div class="table-wrap" id="games-tbl"><div class="empty">Loading games…</div></div></div>
-  </section>
-
-  <section id="panel-standings" class="panel">
-    <h2>Standings</h2>
-    <p class="subtle">Live leaderboard. Possible Remaining = current points + ungraded games where you've made a pick.</p>
-    <div class="card"><div class="table-wrap" id="standings-tbl"><div class="empty">Loading standings…</div></div></div>
-  </section>
-
-  <section id="panel-picks" class="panel">
-    <h2>Picks</h2>
-    <p class="subtle">Each entrant's picks. Green = covered, red = missed, gray = push, blank = ungraded.</p>
-    <div class="card"><div class="table-wrap" id="picks-tbl"><div class="empty">Loading picks…</div></div></div>
-  </section>
-
-  <section id="panel-rules" class="panel">
+  <section id="panel-rules" class="panel active">
     <h2>Rules</h2>
     <div class="card" style="padding:18px;line-height:1.6">
       <p><b>Entry fee:</b> $20 per entry — enter as many times as you like.</p>
@@ -204,6 +186,24 @@
       <p><b>Tiebreaker:</b> Total combined points scored in the Monday Night Football game (closest without going over).</p>
       <p><b>How to enter:</b> Open the Google Sheet link, find a NAME column on the Picks tab, type your name in the header, fill in the dropdowns. Email shared separately.</p>
     </div>
+  </section>
+
+  <section id="panel-picks" class="panel">
+    <h2>Picks</h2>
+    <p class="subtle">Each entrant's picks. Green = covered, red = missed, gray = push, blank = ungraded.</p>
+    <div class="card"><div class="table-wrap" id="picks-tbl"><div class="empty">Loading picks…</div></div></div>
+  </section>
+
+  <section id="panel-games" class="panel">
+    <h2>Games</h2>
+    <p class="subtle">Schedule, spreads, and ATS results. Refreshes automatically.</p>
+    <div class="card"><div class="table-wrap" id="games-tbl"><div class="empty">Loading games…</div></div></div>
+  </section>
+
+  <section id="panel-standings" class="panel">
+    <h2>Standings</h2>
+    <p class="subtle">Live leaderboard. Possible Remaining = current points + ungraded games where you've made a pick.</p>
+    <div class="card"><div class="table-wrap" id="standings-tbl"><div class="empty">Loading standings…</div></div></div>
   </section>
 
   <section id="panel-admin" class="panel">
