@@ -52,11 +52,11 @@ const DOG_SCORE_COL  = 9;   // I
 // ESPN's free scoreboard endpoints (used by espn.com itself).
 // Path keys are the values that appear in your Games tab "Sport" column.
 const ESPN_PATHS = {
-  "NFL": "football/nfl",
-  "CFB": "football/college-football",
-  "NBA": "basketball/nba",
-  "NHL": "hockey/nhl",
-  "MLS": "soccer/usa.1",
+  "NFL":    "football/nfl",
+  "NCAAFB": "football/college-football",
+  "NCAAB":  "basketball/mens-college-basketball",
+  "NBA":    "basketball/nba",
+  "NHL":    "hockey/nhl",
 };
 
 // AHL — uses HockeyTech, the league's official stats backend (same one that
