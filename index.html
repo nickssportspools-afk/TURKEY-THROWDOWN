@@ -78,9 +78,34 @@
   .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   table { border-collapse: collapse; width: 100%; font-size: 14px; }
   th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
-  th { background: var(--navy); color: #fff; font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; position: sticky; top: 0; }
+  th { background: var(--navy); color: #fff; font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; position: sticky; top: 0; z-index: 1; }
   tr:last-child td { border-bottom: 0; }
   tr:hover td { background: #faf8f1; }
+
+  /* ---------- Picks table: freeze first 3 columns (#, Matchup, Spread) ---------- */
+  #picks-tbl { position: relative; }
+  #picks-tbl th, #picks-tbl td { box-sizing: border-box; }
+  #picks-tbl thead th:nth-child(-n+3) { z-index: 3; }
+  #picks-tbl thead th:nth-child(1),
+  #picks-tbl thead th:nth-child(2),
+  #picks-tbl thead th:nth-child(3) { position: sticky; background: var(--navy); }
+  #picks-tbl tbody td:nth-child(1),
+  #picks-tbl tbody td:nth-child(2),
+  #picks-tbl tbody td:nth-child(3) { position: sticky; background: #ffffff; z-index: 2; }
+  #picks-tbl th:nth-child(1),
+  #picks-tbl td:nth-child(1) { left: 0;     min-width: 44px;  max-width: 44px;  }
+  #picks-tbl th:nth-child(2),
+  #picks-tbl td:nth-child(2) { left: 44px;  min-width: 300px; max-width: 300px; white-space: normal; }
+  #picks-tbl th:nth-child(3),
+  #picks-tbl td:nth-child(3) { left: 344px; min-width: 90px;  max-width: 90px;
+                               border-right: 2px solid var(--navy); }
+  #picks-tbl thead th:nth-child(3) { border-right: 2px solid var(--gold); }
+  /* Preserve pick-cell colors even when sticky columns overlap them */
+  #picks-tbl tbody tr:hover td:nth-child(-n+3) { background: #faf8f1; }
+  /* Ensure the conditional-format green/red/gray still show on entrant cells */
+  #picks-tbl tbody td.pick-correct { background: var(--green-bg) !important; }
+  #picks-tbl tbody td.pick-wrong   { background: var(--red-bg)   !important; }
+  #picks-tbl tbody td.pick-push    { background: var(--gray-bg)  !important; }
 
   .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700;
           letter-spacing: .03em; text-transform: uppercase; }
@@ -271,7 +296,13 @@
     if (!rows.length) return `<div class="empty">No data.</div>`;
     let hdrIdx = -1;
     for (let i = 0; i < rows.length; i++) {
-      if ((rows[i][0] || "").trim() === "#") { hdrIdx = i; break; }
+      const row = rows[i] || [];
+      const vals = row.map(v => (v || "").toString().trim().toUpperCase());
+      if (vals.includes("FAVORITE") || vals.includes("HOME") ||
+          vals.includes("ATS WINNER") || (vals.includes("SPREAD") && vals.includes("SPORT"))) {
+        hdrIdx = i;
+        break;
+      }
     }
     if (hdrIdx === -1) return `<div class="empty">Header row not found on Games tab.</div>`;
     let html = `<table>
@@ -355,9 +386,17 @@
     // Google Sheets' CSV export sometimes trims empty leading rows, so we
     // find the header row dynamically (the one whose first cell is "#").
     if (!picksRows.length) return `<div class="empty">No data.</div>`;
+    // Find the header row by looking for one that contains "MATCHUP" or "SPREAD" or "TEAM NAME"
+    // (more robust than checking column A for "#" since "#" may not survive CSV export cleanly).
     let hdrIdx = -1;
     for (let i = 0; i < picksRows.length; i++) {
-      if ((picksRows[i][0] || "").trim() === "#") { hdrIdx = i; break; }
+      const row = picksRows[i] || [];
+      const vals = row.map(v => (v || "").toString().trim().toUpperCase());
+      if (vals.includes("MATCHUP") || vals.includes("TEAM NAME") ||
+         (vals.includes("SPREAD") && vals.includes("SPORT"))) {
+        hdrIdx = i;
+        break;
+      }
     }
     if (hdrIdx === -1) return `<div class="empty">Header row not found on Picks tab.</div>`;
     const hdr = picksRows[hdrIdx];
@@ -376,7 +415,13 @@
     if (gamesRows && gamesRows.length) {
       let gHdrIdx = -1;
       for (let i = 0; i < gamesRows.length; i++) {
-        if ((gamesRows[i][0] || "").trim() === "#") { gHdrIdx = i; break; }
+        const row = gamesRows[i] || [];
+        const vals = row.map(v => (v || "").toString().trim().toUpperCase());
+        if (vals.includes("FAVORITE") || vals.includes("HOME") ||
+            vals.includes("ATS WINNER") || (vals.includes("SPREAD") && vals.includes("SPORT"))) {
+          gHdrIdx = i;
+          break;
+        }
       }
       if (gHdrIdx !== -1) {
         for (let i = gHdrIdx + 1; i < gamesRows.length; i++) {
@@ -429,7 +474,13 @@
     if (!gamesRows.length) return `<div class="empty">No games loaded.</div>`;
     let hdrIdx = -1;
     for (let i = 0; i < gamesRows.length; i++) {
-      if ((gamesRows[i][0] || "").trim() === "#") { hdrIdx = i; break; }
+      const row = gamesRows[i] || [];
+      const vals = row.map(v => (v || "").toString().trim().toUpperCase());
+      if (vals.includes("FAVORITE") || vals.includes("HOME") ||
+          vals.includes("ATS WINNER") || (vals.includes("SPREAD") && vals.includes("SPORT"))) {
+        hdrIdx = i;
+        break;
+      }
     }
     if (hdrIdx === -1) return `<div class="empty">Header row not found on Games tab.</div>`;
     const items = [];
