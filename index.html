@@ -340,16 +340,19 @@
   }
 
   function renderPicks(picksRows, gamesRows) {
-    // Picks layout:
-    //   row 6 (idx 5): # | Matchup | Spread | NAME × N
+    // Picks layout (new):
+    //   row 6 (idx 5): # | Date | Sport | Matchup | Spread | TEAM NAME × N
     //   rows 7..31 (idx 6..30): pick cells for games 1..25
+    //   entrant columns start at F (index 5); header text is "TEAM NAME"
     if (!picksRows.length) return `<div class="empty">No data.</div>`;
     const hdr = picksRows[5] || [];
-    // Find NAME columns that have an actual non-NAME label
+    // Find entrant columns — anything in row 6 from column F onward that's not the literal "TEAM NAME" placeholder
     const nameCols = [];
-    for (let c = 3; c < hdr.length; c++) {
+    for (let c = 5; c < hdr.length; c++) {
       const v = (hdr[c] || "").trim();
-      if (v && v !== "NAME") nameCols.push({ col: c, name: v });
+      if (v && v.toUpperCase() !== "TEAM NAME" && v.toUpperCase() !== "NAME") {
+        nameCols.push({ col: c, name: v });
+      }
     }
     if (!nameCols.length) return `<div class="empty">No entrants yet — players haven't put their names in the sheet.</div>`;
 
@@ -373,10 +376,11 @@
       const r = picksRows[i];
       if (!r) continue;
       const gnum = parseInt(r[0]);
-      const matchup = r[1] || "";
-      const spread = r[2] || "";
+      const matchup = r[3] || "";   // Matchup is now column D (index 3)
+      const spread  = r[4] || "";   // Spread is now column E (index 4)
       const ats = atsByGame[gnum] || "";
-      html += `<tr><td>${gnum}</td><td>${matchup}</td><td>−${spread}</td>`;
+      const spreadDisplay = spread === "TBD" ? "TBD" : `−${spread}`;
+      html += `<tr><td>${gnum}</td><td>${matchup}</td><td>${spreadDisplay}</td>`;
       for (const nc of nameCols) {
         const pick = (r[nc.col] || "").trim();
         let cls = "pick-pending";
