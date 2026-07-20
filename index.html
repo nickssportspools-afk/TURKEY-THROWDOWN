@@ -266,17 +266,24 @@
   // ===================================================================
   function renderGames(rows) {
     // Games sheet layout:
-    //   row 4 (idx 3) headers: # Date Day Sport Favorite Spread Underdog FavScore DogScore ATSWinner
-    //   rows 5..29 (idx 4..28) game rows
+    //   header row (dynamically found): # | Date | Day | Sport | Favorite/HOME | Spread | Underdog/AWAY | Fav Score | Dog Score | ATS Winner
+    //   subsequent rows: game rows (# is 1-25)
     if (!rows.length) return `<div class="empty">No data.</div>`;
+    let hdrIdx = -1;
+    for (let i = 0; i < rows.length; i++) {
+      if ((rows[i][0] || "").trim() === "#") { hdrIdx = i; break; }
+    }
+    if (hdrIdx === -1) return `<div class="empty">Header row not found on Games tab.</div>`;
     let html = `<table>
       <thead><tr>
         <th>#</th><th>Day</th><th>Sport</th><th>Favorite</th><th>Spread</th>
         <th>Underdog</th><th>Score</th><th>Cover</th>
       </tr></thead><tbody>`;
-    for (let i = 4; i < rows.length && i < 29; i++) {
+    for (let i = hdrIdx + 1; i < rows.length; i++) {
       const r = rows[i];
-      if (!r || !r[0]) continue;
+      if (!r) continue;
+      const gnum = parseInt(r[0]);
+      if (!Number.isFinite(gnum) || gnum < 1 || gnum > 25) break;
       const num = r[0], day = r[2] || "", sport = (r[3] || "").trim();
       const fav = r[4] || "", spread = r[5] || "", dog = r[6] || "";
       const fs = r[7] || "", ds = r[8] || "", ats = (r[9] || "").trim();
@@ -341,12 +348,20 @@
 
   function renderPicks(picksRows, gamesRows) {
     // Picks layout (new):
-    //   row 6 (idx 5): # | Date | Sport | Matchup | Spread | TEAM NAME × N
-    //   rows 7..31 (idx 6..30): pick cells for games 1..25
+    //   header row: # | Date | Sport | Matchup | Spread | TEAM NAME × N
+    //   subsequent rows: pick cells for games 1..25
     //   entrant columns start at F (index 5); header text is "TEAM NAME"
+    //
+    // Google Sheets' CSV export sometimes trims empty leading rows, so we
+    // find the header row dynamically (the one whose first cell is "#").
     if (!picksRows.length) return `<div class="empty">No data.</div>`;
-    const hdr = picksRows[5] || [];
-    // Find entrant columns — anything in row 6 from column F onward that's not the literal "TEAM NAME" placeholder
+    let hdrIdx = -1;
+    for (let i = 0; i < picksRows.length; i++) {
+      if ((picksRows[i][0] || "").trim() === "#") { hdrIdx = i; break; }
+    }
+    if (hdrIdx === -1) return `<div class="empty">Header row not found on Picks tab.</div>`;
+    const hdr = picksRows[hdrIdx];
+    // Entrants live from column F (index 5) onward; placeholder is "TEAM NAME"
     const nameCols = [];
     for (let c = 5; c < hdr.length; c++) {
       const v = (hdr[c] || "").trim();
@@ -356,13 +371,21 @@
     }
     const hasEntrants = nameCols.length > 0;
 
-    // Build ATS map: game# → ats winner (from games sheet)
+    // Build ATS map: game# → ats winner (from Games sheet)
     const atsByGame = {};
     if (gamesRows && gamesRows.length) {
-      for (let i = 4; i < gamesRows.length && i < 29; i++) {
-        const r = gamesRows[i];
-        if (!r || !r[0]) continue;
-        atsByGame[parseInt(r[0])] = (r[9] || "").trim();
+      let gHdrIdx = -1;
+      for (let i = 0; i < gamesRows.length; i++) {
+        if ((gamesRows[i][0] || "").trim() === "#") { gHdrIdx = i; break; }
+      }
+      if (gHdrIdx !== -1) {
+        for (let i = gHdrIdx + 1; i < gamesRows.length; i++) {
+          const r = gamesRows[i];
+          if (!r) continue;
+          const gn = parseInt(r[0]);
+          if (!Number.isFinite(gn) || gn < 1 || gn > 25) break;
+          atsByGame[gn] = (r[9] || "").trim();
+        }
       }
     }
 
@@ -376,12 +399,14 @@
     for (const nc of nameCols) html += `<th>${nc.name}</th>`;
     html += `</tr></thead><tbody>`;
 
-    for (let i = 6; i <= 30 && i < picksRows.length; i++) {
+    // Read game rows starting from the row after the header; stop at first row whose # isn't 1-25
+    for (let i = hdrIdx + 1; i < picksRows.length; i++) {
       const r = picksRows[i];
       if (!r) continue;
       const gnum = parseInt(r[0]);
-      const matchup = r[3] || "";   // Matchup is now column D (index 3)
-      const spread  = r[4] || "";   // Spread is now column E (index 4)
+      if (!Number.isFinite(gnum) || gnum < 1 || gnum > 25) break;
+      const matchup = r[3] || "";   // Matchup column (D, index 3)
+      const spread  = r[4] || "";   // Spread column  (E, index 4)
       const ats = atsByGame[gnum] || "";
       const spreadDisplay = spread === "TBD" ? "TBD" : `−${spread}`;
       html += `<tr><td>${gnum}</td><td>${matchup}</td><td>${spreadDisplay}</td>`;
@@ -402,12 +427,19 @@
 
   function renderAdminForm(gamesRows) {
     if (!gamesRows.length) return `<div class="empty">No games loaded.</div>`;
+    let hdrIdx = -1;
+    for (let i = 0; i < gamesRows.length; i++) {
+      if ((gamesRows[i][0] || "").trim() === "#") { hdrIdx = i; break; }
+    }
+    if (hdrIdx === -1) return `<div class="empty">Header row not found on Games tab.</div>`;
     const items = [];
-    for (let i = 4; i < gamesRows.length && i < 29; i++) {
+    for (let i = hdrIdx + 1; i < gamesRows.length; i++) {
       const r = gamesRows[i];
-      if (!r || !r[0]) continue;
+      if (!r) continue;
+      const gnum = parseInt(r[0]);
+      if (!Number.isFinite(gnum) || gnum < 1 || gnum > 25) break;
       items.push({
-        gnum: parseInt(r[0]),
+        gnum,
         day: r[2] || "",
         sport: (r[3] || "").trim(),
         fav: r[4] || "",
