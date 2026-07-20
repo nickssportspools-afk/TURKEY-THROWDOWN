@@ -354,7 +354,7 @@
         nameCols.push({ col: c, name: v });
       }
     }
-    if (!nameCols.length) return `<div class="empty">No entrants yet — players haven't put their names in the sheet.</div>`;
+    const hasEntrants = nameCols.length > 0;
 
     // Build ATS map: game# → ats winner (from games sheet)
     const atsByGame = {};
@@ -366,7 +366,11 @@
       }
     }
 
-    let html = `<table>
+    let html = "";
+    if (!hasEntrants) {
+      html += `<div style="padding:12px 16px;background:#fff7d6;border-left:4px solid var(--gold);margin:0 0 12px;font-size:13px;color:var(--gray)">No entries yet. Once names are entered on the Picks tab (row 6, columns F onward), their columns will appear here.</div>`;
+    }
+    html += `<table>
       <thead><tr>
         <th>#</th><th>Matchup</th><th>Spread</th>`;
     for (const nc of nameCols) html += `<th>${nc.name}</th>`;
