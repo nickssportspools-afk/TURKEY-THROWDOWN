@@ -248,7 +248,7 @@
   // CONFIG — only change SHEET_ID and SCRIPT_URL when those change.
   // ===================================================================
   const SHEET_ID  = "18QTpnT4S27uToMaC5zJnihY8fX-ljognENhrCLlteE8";
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz20IsXD0gPLCcT7ZqOaURYoY4qqMidxoXa2Z4sPQht9rJuqUSyOfT3WgBE7nVnvknL/exec";
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz6Zult7-6kqAiZhBmlS5GN6VT5Hl8HyWxh4xSRI9F-uz_JPMTb1gDjpSKF128Z83Bk5Q/exec";
   const REFRESH_MS = 60_000;  // 1 minute
 
   // ===================================================================
@@ -498,7 +498,7 @@
         day: r[2] || "",
         sport: (r[3] || "").trim(),
         fav: r[4] || "",
-        spread: r[5] || "",
+        spread: (r[5] || "").toString().replace(/^[-−]/, ""),
         dog: r[6] || "",
         fs: r[7] || "",
         ds: r[8] || "",
