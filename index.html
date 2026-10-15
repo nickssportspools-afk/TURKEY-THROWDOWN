@@ -316,7 +316,7 @@
       const gnum = parseInt(r[0]);
       if (!Number.isFinite(gnum) || gnum < 1 || gnum > 25) break;
       const num = r[0], day = r[2] || "", sport = (r[3] || "").trim();
-      const fav = r[4] || "", spread = r[5] || "", dog = r[6] || "";
+      const fav = r[4] || "", spread = (r[5] || "").toString().replace(/^[-−]/, ""), dog = r[6] || "";
       const fs = r[7] || "", ds = r[8] || "", ats = (r[9] || "").trim();
       const score = (fs && ds) ? `${fs}–${ds}` : `<span class="pending">—</span>`;
       let cover;
@@ -402,7 +402,11 @@
     const hdr = picksRows[hdrIdx];
     // Entrants live from column F (index 5) onward; placeholder is "TEAM NAME"
     const nameCols = [];
-    for (let c = 5; c < hdr.length; c++) {
+    const hdrU = hdr.map(v => (v || "").toString().trim().toUpperCase());
+    const matchupCol = hdrU.indexOf("MATCHUP") >= 0 ? hdrU.indexOf("MATCHUP") : 3;
+    const spreadCol  = hdrU.indexOf("SPREAD")  >= 0 ? hdrU.indexOf("SPREAD")  : 4;
+    const firstNameCol = Math.max(matchupCol, spreadCol) + 1;
+    for (let c = firstNameCol; c < hdr.length; c++) {
       const v = (hdr[c] || "").trim();
       if (v && v.toUpperCase() !== "TEAM NAME" && v.toUpperCase() !== "NAME") {
         nameCols.push({ col: c, name: v });
@@ -450,8 +454,8 @@
       if (!r) continue;
       const gnum = parseInt(r[0]);
       if (!Number.isFinite(gnum) || gnum < 1 || gnum > 25) break;
-      const matchup = r[3] || "";   // Matchup column (D, index 3)
-      const spread  = r[4] || "";   // Spread column  (E, index 4)
+      const matchup = r[matchupCol] || "";
+      const spread  = (r[spreadCol] || "").toString().replace(/^[-−]/, "");
       const ats = atsByGame[gnum] || "";
       const spreadDisplay = spread === "TBD" ? "TBD" : `−${spread}`;
       html += `<tr><td>${gnum}</td><td>${matchup}</td><td>${spreadDisplay}</td>`;
