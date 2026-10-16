@@ -289,51 +289,76 @@
   // ===================================================================
   // RENDERERS
   // ===================================================================
+  // Shows the Games tab exactly as laid out in the Google Sheet
   function renderGames(rows) {
-    // Games sheet layout:
-    //   header row (dynamically found): # | Date | Day | Sport | Favorite/HOME | Spread | Underdog/AWAY | Fav Score | Dog Score | ATS Winner
-    //   subsequent rows: game rows (# is 1-25)
     if (!rows.length) return `<div class="empty">No data.</div>`;
-    let hdrIdx = -1;
+    let h = -1;
     for (let i = 0; i < rows.length; i++) {
-      const row = rows[i] || [];
-      const vals = row.map(v => (v || "").toString().trim().toUpperCase());
-      if (vals.includes("FAVORITE") || vals.includes("HOME") ||
-          vals.includes("ATS WINNER") || (vals.includes("SPREAD") && vals.includes("SPORT"))) {
-        hdrIdx = i;
-        break;
-      }
+      const vals = (rows[i] || []).map(v => (v || "").toString().trim().toUpperCase());
+      if (vals.includes("FAVORITE") || vals.includes("ATS WINNER")) { h = i; break; }
     }
-    if (hdrIdx === -1) return `<div class="empty">Header row not found on Games tab.</div>`;
-    let html = `<table>
-      <thead><tr>
-        <th>#</th><th>Day</th><th>Sport</th><th>Favorite</th><th>Spread</th>
-        <th>Underdog</th><th>Score</th><th>Cover</th>
-      </tr></thead><tbody>`;
-    for (let i = hdrIdx + 1; i < rows.length; i++) {
-      const r = rows[i];
-      if (!r) continue;
-      const gnum = parseInt(r[0]);
-      if (!Number.isFinite(gnum) || gnum < 1 || gnum > 25) break;
-      const num = r[0], day = r[2] || "", sport = (r[3] || "").trim();
-      const fav = r[4] || "", spread = (r[5] || "").toString().replace(/^[-−]/, ""), dog = r[6] || "";
-      const fs = r[7] || "", ds = r[8] || "", ats = (r[9] || "").trim();
-      const score = (fs && ds) ? `${fs}–${ds}` : `<span class="pending">—</span>`;
-      let cover;
-      if (!ats) cover = `<span class="pending">—</span>`;
-      else if (ats === "PUSH") cover = `<span class="push-team">PUSH</span>`;
-      else cover = `<span class="winner-team">${ats}</span>`;
-      html += `<tr>
-        <td>${num}</td><td>${day}</td>
-        <td><span class="pill pill-${sport}">${sport}</span></td>
-        <td>${fav}</td>
-        <td>−${spread}</td>
-        <td>${dog}</td>
-        <td>${score}</td>
-        <td>${cover}</td>
-      </tr>`;
+    if (h < 0) return `<div class="empty">Header row not found on Games tab.</div>`;
+    const hdr = rows[h].map(v => (v || "").toString().trim());
+    let last = 0;
+    hdr.forEach((v, i) => { if (v) last = i; });
+    const label = (v, i) => i === 0 ? "#" : v;
+    const U = hdr.map(v => v.toUpperCase());
+    let html = `<table><thead><tr>`;
+    for (let c = 0; c <= last; c++) html += `<th>${label(hdr[c], c)}</th>`;
+    html += `</tr></thead><tbody>`;
+    for (let i = h + 1; i < rows.length; i++) {
+      const r = rows[i] || [];
+      const n = parseInt(r[0]);
+      if (!Number.isFinite(n) || n < 1 || n > 25) break;
+      html += `<tr>`;
+      for (let c = 0; c <= last; c++) {
+        const v = (r[c] || "").toString().trim();
+        if (U[c] === "SPORT" && v) html += `<td><span class="pill pill-${v}">${v}</span></td>`;
+        else if (U[c] === "ATS WINNER") html += `<td>${!v ? '<span class="pending">—</span>' : v === "PUSH" ? '<span class="push-team">PUSH</span>' : `<span class="winner-team">${v}</span>`}</td>`;
+        else html += `<td>${v}</td>`;
+      }
+      html += `</tr>`;
     }
     return html + `</tbody></table>`;
+  }
+
+  // Finds Games tab columns by their header names, so moving or adding columns doesn't break the site
+  function gamesCols(hdrRow) {
+    const H = (hdrRow || []).map(v => (v || "").toString().trim().toUpperCase());
+    const f = (names, dflt) => { for (const n of names) { const i = H.indexOf(n); if (i >= 0) return i; } return dflt; };
+    return {
+      date: f(["DATE"], 1), day: f(["DAY"], -1), sport: f(["SPORT"], 2), fav: f(["FAVORITE"], 3),
+      spread: f(["SPREAD"], 4), dog: f(["UNDERDOG"], 5), fs: f(["FAV SCORE"], 6),
+      ds: f(["DOG SCORE"], 7), ats: f(["ATS WINNER"], 8),
+    };
+  }
+
+  // Reads the Games tab into { gameNumber: {date, day, sport, fav, spread, dog, fs, ds, ats} }
+  function getGameInfo(gamesRows) {
+    const info = {};
+    if (!gamesRows || !gamesRows.length) return info;
+    let h = -1;
+    for (let i = 0; i < gamesRows.length; i++) {
+      const vals = (gamesRows[i] || []).map(v => (v || "").toString().trim().toUpperCase());
+      if (vals.includes("FAVORITE") || vals.includes("ATS WINNER")) { h = i; break; }
+    }
+    if (h < 0) return info;
+    const C = gamesCols(gamesRows[h]);
+    for (let i = h + 1; i < gamesRows.length; i++) {
+      const r = gamesRows[i] || [];
+      const n = parseInt(r[0]);
+      if (!Number.isFinite(n) || n < 1 || n > 25) break;
+      let date = (r[C.date] || "").toString().trim(), day = C.day >= 0 ? (r[C.day] || "").toString().trim() : "";
+      // "Thu 11/26" in one column gets split into Day "Thu" and Date "11/26"
+      const m = date.match(/^([A-Za-z]{3,9})\.?\s+(.+)$/);
+      if (!day && m) { day = m[1]; date = m[2]; }
+      info[n] = {
+        date, day, sport: (r[C.sport] || "").trim(), fav: r[C.fav] || "", dog: r[C.dog] || "",
+        spread: (r[C.spread] || "").toString().replace(/^[-−]/, ""),
+        fs: r[C.fs] || "", ds: r[C.ds] || "", ats: (r[C.ats] || "").trim(),
+      };
+    }
+    return info;
   }
 
   function renderStandings(rows) {
@@ -405,7 +430,8 @@
     const hdrU = hdr.map(v => (v || "").toString().trim().toUpperCase());
     const matchupCol = hdrU.indexOf("MATCHUP") >= 0 ? hdrU.indexOf("MATCHUP") : 3;
     const spreadCol  = hdrU.indexOf("SPREAD")  >= 0 ? hdrU.indexOf("SPREAD")  : 4;
-    const firstNameCol = Math.max(matchupCol, spreadCol) + 1;
+    const fixedIdx = hdrU.map((v, i) => ["DATE", "DAY", "SPORT", "MATCHUP", "SPREAD"].includes(v) ? i : -1);
+    const firstNameCol = Math.max(matchupCol, spreadCol, ...fixedIdx) + 1;
     for (let c = firstNameCol; c < hdr.length; c++) {
       const v = (hdr[c] || "").trim();
       if (v && v.toUpperCase() !== "TEAM NAME" && v.toUpperCase() !== "NAME") {
@@ -428,23 +454,27 @@
         }
       }
       if (gHdrIdx !== -1) {
+        const GC = gamesCols(gamesRows[gHdrIdx]);
         for (let i = gHdrIdx + 1; i < gamesRows.length; i++) {
           const r = gamesRows[i];
           if (!r) continue;
           const gn = parseInt(r[0]);
           if (!Number.isFinite(gn) || gn < 1 || gn > 25) break;
-          atsByGame[gn] = (r[9] || "").trim();
+          atsByGame[gn] = (r[GC.ats] || "").trim();
         }
       }
     }
 
+    const gameInfo = getGameInfo(gamesRows);
     let html = "";
     if (!hasEntrants) {
-      html += `<div style="padding:12px 16px;background:#fff7d6;border-left:4px solid var(--gold);margin:0 0 12px;font-size:13px;color:var(--gray)">No entries yet. Once names are entered on the Picks tab (row 6, columns F onward), their columns will appear here.</div>`;
+      html += `<div style="padding:12px 16px;background:#fff7d6;border-left:4px solid var(--gold);margin:0 0 12px;font-size:13px;color:var(--gray)">No entries yet. Picks appear here after the entry deadline.</div>`;
     }
     html += `<table>
       <thead><tr>
-        <th>#</th><th>Matchup</th><th>Spread</th>`;
+        <th>#</th>`;
+    for (let c = 1; c < firstNameCol; c++) html += `<th>${(hdr[c] || "").trim()}</th>`;
+    html += ``;
     for (const nc of nameCols) html += `<th>${nc.name}</th>`;
     html += `</tr></thead><tbody>`;
 
@@ -458,7 +488,11 @@
       const spread  = (r[spreadCol] || "").toString().replace(/^[-−]/, "");
       const ats = atsByGame[gnum] || "";
       const spreadDisplay = spread === "TBD" ? "TBD" : `−${spread}`;
-      html += `<tr><td>${gnum}</td><td>${matchup}</td><td>${spreadDisplay}</td>`;
+      html += `<tr><td>${gnum}</td>`;
+      for (let c = 1; c < firstNameCol; c++) {
+        const v = (r[c] || "").toString().trim();
+        html += hdrU[c] === "SPORT" && v ? `<td><span class="pill pill-${v}">${v}</span></td>` : `<td>${v}</td>`;
+      }
       for (const nc of nameCols) {
         const pick = (r[nc.col] || "").trim();
         let cls = "pick-pending";
@@ -493,15 +527,16 @@
       if (!r) continue;
       const gnum = parseInt(r[0]);
       if (!Number.isFinite(gnum) || gnum < 1 || gnum > 25) break;
+      const C = gamesCols(gamesRows[hdrIdx]);
       items.push({
         gnum,
-        day: r[2] || "",
-        sport: (r[3] || "").trim(),
-        fav: r[4] || "",
-        spread: (r[5] || "").toString().replace(/^[-−]/, ""),
-        dog: r[6] || "",
-        fs: r[7] || "",
-        ds: r[8] || "",
+        day: r[C.date] || "",
+        sport: (r[C.sport] || "").trim(),
+        fav: r[C.fav] || "",
+        spread: (r[C.spread] || "").toString().replace(/^[-−]/, ""),
+        dog: r[C.dog] || "",
+        fs: r[C.fs] || "",
+        ds: r[C.ds] || "",
       });
     }
     let html = "";
