@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Enter: Turkey Throwdown 2026</title>
+<meta name="theme-color" content="#20124d">
+<style>
+  :root {
+    --navy: #20124d; --navy-2: #2c1c66; --gold: #d4a017; --gold-bg: #fff4d1;
+    --red: #9c0006; --red-bg: #ffe3e6; --gray: #5b5872; --line: #e3e3e8;
+    --bg: #fafaf7; --card: #fff;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: #14123a;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 15px; line-height: 1.45; -webkit-font-smoothing: antialiased; }
+  header { background: linear-gradient(135deg, var(--navy), var(--navy-2)); color: #fff;
+    border-bottom: 3px solid var(--gold); padding: 18px 16px 14px; }
+  header .in { max-width: 760px; margin: 0 auto; }
+  header h1 { margin: 0; font-size: 22px; font-weight: 800; }
+  header p { margin: 4px 0 0; font-size: 13px; opacity: .85; }
+  main { max-width: 760px; margin: 0 auto; padding: 16px 16px 120px; }
+
+  .box { background: var(--card); border-radius: 10px; box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 4px 12px rgba(32,18,77,.06);
+    padding: 16px; margin-bottom: 16px; }
+  .rules { font-size: 14px; color: var(--gray); }
+  .rules b { color: #14123a; }
+  label.field { display: block; font-weight: 700; font-size: 14px; margin: 0 0 12px; }
+  label.field span { display: block; margin-bottom: 4px; }
+  input[type=text], input[type=email], input[type=number] {
+    width: 100%; font: inherit; padding: 10px 12px; border: 1px solid #c9c7d6; border-radius: 8px; background: #fff; }
+  input:focus { outline: 2px solid var(--gold); outline-offset: 1px; border-color: var(--gold); }
+
+  .day { margin: 22px 0 8px; font-size: 16px; font-weight: 800; color: var(--navy); }
+  .games { background: var(--card); border-radius: 10px; overflow: hidden;
+    box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 4px 12px rgba(32,18,77,.06); }
+  .head, .row { display: grid; grid-template-columns: 1fr 1fr; }
+  .head div { background: var(--navy); color: #fff; font-size: 12px; font-weight: 700; letter-spacing: .04em; padding: 8px 12px; }
+  .head div:last-child { text-align: right; }
+  .row { border-top: 1px solid var(--line); }
+  .row.missing { background: var(--red-bg); }
+  .opt { display: flex; align-items: center; gap: 10px; padding: 12px; cursor: pointer; font-weight: 600; min-height: 52px; }
+  .opt.dog { justify-content: flex-end; text-align: right; border-left: 1px solid var(--line); }
+  .opt input { width: 20px; height: 20px; margin: 0; accent-color: var(--navy); flex: 0 0 auto; cursor: pointer; }
+  .opt:has(input:checked) { background: var(--gold-bg); }
+  .opt:has(input:focus-visible) { outline: 2px solid var(--gold); outline-offset: -2px; }
+  .sp { font-weight: 500; color: var(--gray); white-space: nowrap; }
+  .tag { display: flex; gap: 6px; align-items: center; font-size: 11px; font-weight: 600; color: var(--gray); margin-top: 2px; }
+  .opt.dog .tag { justify-content: flex-end; }
+  .fd { font-size: 10px; font-weight: 800; letter-spacing: .04em; padding: 1px 6px; border-radius: 999px; }
+  .fd.fav { background: #fde8a8; color: #6b4e00; }
+  .fd.dog { background: #e6e4f0; color: #3d3a57; }
+  .saved { font-size: 12px; color: var(--gray); }
+
+  .bar { position: fixed; left: 0; right: 0; bottom: 0; background: #fff; border-top: 1px solid var(--line);
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px)); box-shadow: 0 -4px 12px rgba(32,18,77,.08); }
+  .bar .in { max-width: 760px; margin: 0 auto; display: flex; align-items: center; gap: 12px; }
+  .count { font-size: 14px; color: var(--gray); flex: 1; }
+  button { font: inherit; font-weight: 700; background: var(--navy); color: #fff; border: 0; border-radius: 8px;
+    padding: 12px 22px; cursor: pointer; }
+  button:disabled { opacity: .5; cursor: default; }
+  .msg { border-radius: 8px; padding: 12px 14px; margin-bottom: 16px; font-weight: 600; }
+  .msg.err { background: var(--red-bg); color: var(--red); }
+  .msg.ok { background: #d9f5df; color: #0f5a22; }
+  .done h2 { margin: 0 0 6px; }
+  @media (max-width: 480px) { .opt { font-size: 14px; padding: 10px; gap: 8px; } }
+</style>
+</head>
+<body>
+<header><div class="in">
+  <h1>🦃 Turkey Throwdown 2026</h1>
+  <p>Entry form</p>
+</div></header>
+
+<main id="app">
+  <div class="box rules">
+    Pick the team you think will cover the spread in each game. The home team is on the left, the away team on the right. The favorite has the minus spread and a <span class="fd fav">FAV</span> tag, the underdog has the plus spread and a <span class="fd dog">DOG</span> tag.<br><br>
+    Your picks are saved on this device as you go, so you can come back and finish later.<br><br>
+    <b>Deadline:</b> Thursday Nov 26, noon Central Time. <b>$25 per entry.</b><br>
+    More than one entry? Submit once per entry, with a different team name each time.<br>
+    Changing your picks? Submit again with the exact same team name before the deadline. Your newest picks replace the old ones.
+  </div>
+  <div id="content"><div class="box">Loading games…</div></div>
+</main>
+
+<div class="bar" id="bar" hidden><div class="in">
+  <div class="count" id="count"></div>
+  <button id="submit" type="button">Submit picks</button>
+</div></div>
+
+<script>
+  const SHEET_ID   = "18QTpnT4S27uToMaC5zJnihY8fX-ljognENhrCLlteE8";
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz6Zult7-6kqAiZhBmlS5GN6VT5Hl8HyWxh4xSRI9F-uz_JPMTb1gDjpSKF128Z83Bk5Q/exec";
+  const DEADLINE   = new Date("2026-11-26T12:00:00-06:00");
+  const DAYS = { SUN: "Sunday", MON: "Monday", TUE: "Tuesday", WED: "Wednesday", THU: "Thursday", FRI: "Friday", SAT: "Saturday" };
+
+  let games = [];
+
+  function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+
+  function parseCSV(text) {
+    const rows = []; let row = [], cur = "", q = false;
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (q) { if (c === '"') { if (text[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += c; }
+      else if (c === '"') q = true;
+      else if (c === ",") { row.push(cur); cur = ""; }
+      else if (c === "\n") { row.push(cur); rows.push(row); row = []; cur = ""; }
+      else if (c !== "\r") cur += c;
+    }
+    if (cur !== "" || row.length) { row.push(cur); rows.push(row); }
+    return rows;
+  }
+
+  async function loadGames() {
+    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Games`;
+    const rows = parseCSV(await (await fetch(url, { cache: "no-store" })).text());
+    const h = rows.findIndex(r => r.some(v => ["FAVORITE", "HOME", "ATS WINNER"].includes(v.trim().toUpperCase())));
+    if (h < 0) throw new Error("Couldn’t read the games.");
+    const H = rows[h].map(v => v.trim().toUpperCase());
+    const col = n => H.indexOf(n);
+    const num = v => Math.abs(parseFloat(String(v || "").replace(/[^\d.]/g, "")) || 0);
+    const homeAway = col("HOME") >= 0 && col("AWAY") >= 0;
+    const C = { date: col("DATE") >= 0 ? col("DATE") : col("DAY"), sport: col("SPORT"),
+      fav: col("FAVORITE"), spread: col("SPREAD"), dog: col("UNDERDOG"),
+      home: col("HOME"), away: col("AWAY"),
+      homeSp: col("HOME") >= 0 ? H.indexOf("SPREAD", col("HOME")) : -1,
+      awaySp: col("AWAY") >= 0 ? H.indexOf("SPREAD", col("AWAY")) : -1 };
+    const out = [];
+    for (let i = h + 1; i < rows.length; i++) {
+      const r = rows[i], n = parseInt(r[0], 10);
+      if (!(n >= 1 && n <= 25)) continue;
+      let fav, dog, line, home = "";
+      if (homeAway) {
+        // HOME / AWAY layout: the team whose Spread column is filled in is the favorite
+        const ht = (r[C.home] || "").trim(), at = (r[C.away] || "").trim();
+        const hs = C.homeSp >= 0 ? num(r[C.homeSp]) : 0, as_ = C.awaySp >= 0 ? num(r[C.awaySp]) : 0;
+        const awayFav = as_ > 0 && hs === 0;
+        fav = awayFav ? at : ht; dog = awayFav ? ht : at; line = Math.max(hs, as_);
+        home = awayFav ? "DOG" : "FAV";
+      } else {
+        fav = (r[C.fav] || "").trim(); dog = (r[C.dog] || "").trim(); line = num(r[C.spread]);
+      }
+      out.push({ num: n, date: (r[C.date] || "").trim(), sport: (r[C.sport] || "").trim(), fav, dog, home,
+        spread: line ? String(line) : "" });
+    }
+    return out.sort((a, b) => a.num - b.num);
+  }
+
+  function dayLabel(d) {
+    const p = d.split(/\s+/);
+    const name = DAYS[(p[0] || "").slice(0, 3).toUpperCase()] || p[0] || "Games";
+    return name + (p[1] ? " " + p[1] : "");
+  }
+
+  function render() {
+    const groups = [];
+    games.forEach(g => {
+      const last = groups[groups.length - 1];
+      if (last && last.date === g.date) last.games.push(g); else groups.push({ date: g.date, games: [g] });
+    });
+    let html = `<div class="box">
+      <label class="field"><span>Email</span><input type="email" id="email" autocomplete="email" required></label>
+      <label class="field" style="margin:0"><span>Team name</span><input type="text" id="team" maxlength="40" required>
+      </label></div>`;
+    groups.forEach(grp => {
+      html += `<div class="day">📅 ${esc(dayLabel(grp.date))}</div><div class="games">
+        <div class="head"><div>HOME</div><div>AWAY</div></div>`;
+      grp.games.forEach(g => {
+        const has = g.spread && Number(g.spread) !== 0;
+        const favSide = { name: g.fav, sp: has ? ` <span class="sp">(-${esc(g.spread)})</span>` : "", fd: has ? `<span class="fd fav">FAV</span>` : "" };
+        const dogSide = { name: g.dog, sp: has ? ` <span class="sp">(+${esc(g.spread)})</span>` : "", fd: has ? `<span class="fd dog">DOG</span>` : "" };
+        const left = g.home === "DOG" ? dogSide : favSide;
+        const right = g.home === "DOG" ? favSide : dogSide;
+        const info = `${g.num}. ${esc(g.sport)}${g.home === "NEUTRAL" ? " · Neutral site" : ""}`;
+        html += `<div class="row" id="row-${g.num}">
+          <label class="opt fav"><input type="radio" name="g${g.num}" value="${esc(left.name)}">
+            <span>${esc(left.name)}${left.sp}<span class="tag">${left.fd}${info}</span></span></label>
+          <label class="opt dog"><span>${esc(right.name)}${right.sp}<span class="tag">${right.fd}</span></span>
+            <input type="radio" name="g${g.num}" value="${esc(right.name)}"></label>
+        </div>`;
+      });
+      html += `</div>`;
+    });
+    html += `<div class="box" style="margin-top:22px">
+      <label class="field" style="margin:0"><span>Tiebreaker: total combined points in the Monday Night Football game</span>
+      <input type="number" id="tb" min="0" max="200" step="1" inputmode="numeric" required></label></div>
+      <div id="msg"></div>`;
+    document.getElementById("content").innerHTML = html;
+    document.getElementById("bar").hidden = false;
+    loadDraft();
+    document.getElementById("content").addEventListener("change", e => {
+      const row = e.target.closest(".row"); if (row) row.classList.remove("missing");
+      updateCount(); saveDraft();
+    });
+    document.getElementById("content").addEventListener("input", saveDraft);
+    updateCount();
+  }
+
+  const DRAFT_KEY = "tt2026-entry-draft";
+  function saveDraft() {
+    try {
+      const d = { email: val("email"), team: val("team"), tb: val("tb"), picks: {} };
+      games.forEach(g => { const c = document.querySelector(`input[name="g${g.num}"]:checked`); if (c) d.picks[g.num] = c.value; });
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(d));
+    } catch (e) {}
+  }
+  function loadDraft() {
+    try {
+      const d = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null");
+      if (!d) return;
+      ["email", "team", "tb"].forEach(k => { if (d[k]) document.getElementById(k).value = d[k]; });
+      Object.keys(d.picks || {}).forEach(n => {
+        const inp = [...document.querySelectorAll(`input[name="g${n}"]`)].find(i => i.value === d.picks[n]);
+        if (inp) inp.checked = true; // a pick for a team that's since changed is simply dropped
+      });
+    } catch (e) {}
+  }
+  function clearDraft() { try { localStorage.removeItem(DRAFT_KEY); } catch (e) {} }
+  function val(id) { const el = document.getElementById(id); return el ? el.value.trim() : ""; }
+
+  function picked() { return games.filter(g => document.querySelector(`input[name="g${g.num}"]:checked`)).length; }
+  function updateCount() { document.getElementById("count").textContent = `${picked()} of ${games.length} picked`; }
+
+  function showMsg(text, ok) {
+    const m = document.getElementById("msg");
+    m.innerHTML = `<div class="msg ${ok ? "ok" : "err"}">${esc(text)}</div>`;
+    m.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  async function submit() {
+    const email = document.getElementById("email").value.trim();
+    const team = document.getElementById("team").value.trim();
+    const tb = document.getElementById("tb").value.trim();
+    const picks = {};
+    let firstMissing = null;
+    games.forEach(g => {
+      const c = document.querySelector(`input[name="g${g.num}"]:checked`);
+      if (c) picks[g.num] = c.value;
+      else { document.getElementById("row-" + g.num).classList.add("missing"); firstMissing = firstMissing || g.num; }
+    });
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return showMsg("Enter a valid email address.");
+    if (!team) return showMsg("Enter a team name.");
+    if (firstMissing) { document.getElementById("row-" + firstMissing).scrollIntoView({ behavior: "smooth", block: "center" }); return; }
+    if (!/^\d{1,3}$/.test(tb)) return showMsg("Enter your tiebreaker as a whole number.");
+
+    const btn = document.getElementById("submit");
+    btn.disabled = true; btn.textContent = "Submitting…";
+    try {
+      const res = await fetch(SCRIPT_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ action: "entry", email, team, tiebreaker: tb, picks }) });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || "Something went wrong.");
+      clearDraft();
+      document.getElementById("bar").hidden = true;
+      document.getElementById("content").innerHTML = `<div class="box done"><h2>Picks submitted for ${esc(team)}</h2>
+        <p>Your picks stay private until the deadline. Don’t forget to pay your $25 entry fee before Thursday at noon Central.</p>
+        <p><a href="enter.html">Submit another entry</a> · <a href="./">Back to the Turkey Throwdown site</a></p></div>`;
+      window.scrollTo({ top: 0 });
+    } catch (e) {
+      showMsg("Your picks weren’t saved: " + e.message + " Try again.");
+      btn.disabled = false; btn.textContent = "Submit picks";
+    }
+  }
+
+  (async () => {
+    if (new Date() > DEADLINE) {
+      document.getElementById("content").innerHTML = `<div class="box">Entries are closed. Good luck!</div>`;
+      return;
+    }
+    try {
+      games = await loadGames();
+      render();
+      document.getElementById("submit").addEventListener("click", submit);
+    } catch (e) {
+      document.getElementById("content").innerHTML = `<div class="box">Couldn’t load the games. Reload the page to try again.</div>`;
+    }
+  })();
+</script>
+</body>
+</html>

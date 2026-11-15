@@ -328,9 +328,26 @@
     const f = (names, dflt) => { for (const n of names) { const i = H.indexOf(n); if (i >= 0) return i; } return dflt; };
     return {
       date: f(["DATE"], 1), day: f(["DAY"], -1), sport: f(["SPORT"], 2), fav: f(["FAVORITE"], 3),
-      spread: f(["SPREAD"], 4), dog: f(["UNDERDOG"], 5), fs: f(["FAV SCORE"], 6),
-      ds: f(["DOG SCORE"], 7), ats: f(["ATS WINNER"], 8),
+      spread: f(["SPREAD"], 4), dog: f(["UNDERDOG"], 5), fs: f(["HOME SCORE", "FAV SCORE"], 6),
+      ds: f(["AWAY SCORE", "DOG SCORE"], 7), ats: f(["ATS WINNER"], 8),
+      // HOME / AWAY layout: each team has its own Spread column right after it
+      home: H.indexOf("HOME"), away: H.indexOf("AWAY"),
+      homeSp: H.indexOf("HOME") >= 0 ? H.indexOf("SPREAD", H.indexOf("HOME")) : -1,
+      awaySp: H.indexOf("AWAY") >= 0 ? H.indexOf("SPREAD", H.indexOf("AWAY")) : -1,
     };
+  }
+
+  // Works out favorite, underdog and the line for one Games row, for either layout
+  function rowFavDog(r, C) {
+    const num = v => Math.abs(parseFloat(String(v || "").replace(/[^\d.]/g, "")) || 0);
+    if (C.home >= 0 && C.away >= 0) {
+      const home = (r[C.home] || "").trim(), away = (r[C.away] || "").trim();
+      const hs = C.homeSp >= 0 ? num(r[C.homeSp]) : 0, as_ = C.awaySp >= 0 ? num(r[C.awaySp]) : 0;
+      const awayFav = as_ > 0 && hs === 0;
+      const line = Math.max(hs, as_);
+      return { fav: awayFav ? away : home, dog: awayFav ? home : away, spread: line ? String(line) : "", home };
+    }
+    return { fav: r[C.fav] || "", dog: r[C.dog] || "", spread: (r[C.spread] || "").toString().replace(/^[-−]/, ""), home: "" };
   }
 
   // Reads the Games tab into { gameNumber: {date, day, sport, fav, spread, dog, fs, ds, ats} }
@@ -353,8 +370,7 @@
       const m = date.match(/^([A-Za-z]{3,9})\.?\s+(.+)$/);
       if (!day && m) { day = m[1]; date = m[2]; }
       info[n] = {
-        date, day, sport: (r[C.sport] || "").trim(), fav: r[C.fav] || "", dog: r[C.dog] || "",
-        spread: (r[C.spread] || "").toString().replace(/^[-−]/, ""),
+        date, day, sport: (r[C.sport] || "").trim(), ...rowFavDog(r, C),
         fs: r[C.fs] || "", ds: r[C.ds] || "", ats: (r[C.ats] || "").trim(),
       };
     }
@@ -532,22 +548,36 @@
         gnum,
         day: r[C.date] || "",
         sport: (r[C.sport] || "").trim(),
-        fav: r[C.fav] || "",
-        spread: (r[C.spread] || "").toString().replace(/^[-−]/, ""),
-        dog: r[C.dog] || "",
+        fav: rowFavDog(r, C).fav,
+        spread: rowFavDog(r, C).spread,
+        dog: rowFavDog(r, C).dog,
         fs: r[C.fs] || "",
         ds: r[C.ds] || "",
       });
     }
+    const HC = gamesCols(gamesRows[hdrIdx]);
+    const homeAway = HC.home >= 0 && HC.away >= 0;
     let html = "";
     for (const g of items) {
+      // Home/Away layout: first box is the home score, second is the away score
+      let label, p1 = "Fav", p2 = "Dog";
+      if (homeAway) {
+        const r = gamesRows.find(x => parseInt((x || [])[0]) === g.gnum) || [];
+        const home = (r[HC.home] || "").trim(), away = (r[HC.away] || "").trim();
+        const sp = g.spread ? ` (${home === g.fav ? "−" : "+"}${g.spread})` : "";
+        const sp2 = g.spread ? ` (${away === g.fav ? "−" : "+"}${g.spread})` : "";
+        label = `G${g.gnum}: ${home}${sp} vs ${away}${sp2}`;
+        p1 = "Home"; p2 = "Away";
+      } else {
+        label = `G${g.gnum}: ${g.fav} (−${g.spread}) vs ${g.dog}`;
+      }
       html += `<div class="admin-form" data-game="${g.gnum}">
         <div>
           <span class="pill pill-${g.sport}">${g.sport}</span>
-          <span class="matchup">G${g.gnum}: ${g.fav} (−${g.spread}) vs ${g.dog}</span>
+          <span class="matchup">${label}</span>
         </div>
-        <input type="number" inputmode="numeric" placeholder="Fav" class="fav-score" value="${g.fs}">
-        <input type="number" inputmode="numeric" placeholder="Dog" class="dog-score" value="${g.ds}">
+        <input type="number" inputmode="numeric" placeholder="${p1}" class="fav-score" value="${g.fs}">
+        <input type="number" inputmode="numeric" placeholder="${p2}" class="dog-score" value="${g.ds}">
         <button class="save-btn" data-game="${g.gnum}">Save</button>
       </div>`;
     }
