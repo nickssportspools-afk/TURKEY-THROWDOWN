@@ -135,11 +135,17 @@
       if (!(n >= 1 && n <= 25)) continue;
       let fav, dog, line, home = "";
       if (homeAway) {
-        // HOME / AWAY layout: the team whose Spread column is filled in is the favorite
+        // HOME / AWAY layout: the favorite is the side with the MINUS spread (a "+" or blank cell is the underdog).
+        // If neither side has a minus sign, fall back to: the only side with a number filled in is the favorite.
         const ht = (r[C.home] || "").trim(), at = (r[C.away] || "").trim();
         const hs = C.homeSp >= 0 ? num(r[C.homeSp]) : 0, as_ = C.awaySp >= 0 ? num(r[C.awaySp]) : 0;
-        const awayFav = as_ > 0 && hs === 0;
-        fav = awayFav ? at : ht; dog = awayFav ? ht : at; line = Math.max(hs, as_);
+        const signed = v => { const n = parseFloat(String(v == null ? "" : v).replace(/[^\d.\-]/g, "")); return Number.isFinite(n) ? n : null; };
+        const hsSigned = C.homeSp >= 0 ? signed(r[C.homeSp]) : null, asSigned = C.awaySp >= 0 ? signed(r[C.awaySp]) : null;
+        let awayFav;
+        if (hsSigned !== null && hsSigned < 0) awayFav = false;
+        else if (asSigned !== null && asSigned < 0) awayFav = true;
+        else awayFav = as_ > 0 && hs === 0;
+        fav = awayFav ? at : ht; dog = awayFav ? ht : at; line = (awayFav ? as_ : hs) || Math.max(hs, as_);
         home = awayFav ? "DOG" : "FAV";
       } else {
         fav = (r[C.fav] || "").trim(); dog = (r[C.dog] || "").trim(); line = num(r[C.spread]);
