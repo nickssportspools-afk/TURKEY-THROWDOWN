@@ -46,6 +46,7 @@
   .opt:has(input:checked) { background: var(--gold-bg); }
   .opt:has(input:focus-visible) { outline: 2px solid var(--gold); outline-offset: -2px; }
   .sp { font-weight: 500; color: var(--gray); white-space: nowrap; }
+  .proj-note { font-size: .85rem; color: var(--gray); margin: 10px 4px 0; }
   .tag { display: flex; gap: 6px; align-items: center; font-size: 11px; font-weight: 600; color: var(--gray); margin-top: 2px; }
   .opt.dog .tag { justify-content: flex-end; }
   .fd { font-size: 10px; font-weight: 800; letter-spacing: .04em; padding: 1px 6px; border-radius: 999px; }
@@ -142,8 +143,10 @@
       } else {
         fav = (r[C.fav] || "").trim(); dog = (r[C.dog] || "").trim(); line = num(r[C.spread]);
       }
+      // A spread cell shown with an asterisk on the Games tab (e.g. -5.5*) means "projected spread"
+      const rawSp = homeAway ? ((C.homeSp >= 0 ? r[C.homeSp] : "") + " " + (C.awaySp >= 0 ? r[C.awaySp] : "")) : (r[C.spread] || "");
       out.push({ num: n, date: (r[C.date] || "").trim(), sport: (r[C.sport] || "").trim(), fav, dog, home,
-        spread: line ? String(line) : "" });
+        spread: line ? String(line) : "", proj: !!line && String(rawSp).indexOf("*") >= 0 });
     }
     return out.sort((a, b) => a.num - b.num);
   }
@@ -164,13 +167,14 @@
       <label class="field"><span>Email</span><input type="email" id="email" autocomplete="email" required></label>
       <label class="field" style="margin:0"><span>Team name</span><input type="text" id="team" maxlength="40" required>
       </label></div>`;
+    if (games.some(g => g.proj)) html += `<p class="proj-note">* Projected spread. No sportsbook line was posted when this form was built. Spreads shown are final for this contest.</p>`;
     groups.forEach(grp => {
       html += `<div class="day">📅 ${esc(dayLabel(grp.date))}</div><div class="games">
         <div class="head"><div>HOME</div><div>AWAY</div></div>`;
       grp.games.forEach(g => {
         const has = g.spread && Number(g.spread) !== 0;
-        const favSide = { name: g.fav, sp: has ? ` <span class="sp">(-${esc(g.spread)})</span>` : "", fd: has ? `<span class="fd fav">FAV</span>` : "" };
-        const dogSide = { name: g.dog, sp: has ? ` <span class="sp">(+${esc(g.spread)})</span>` : "", fd: has ? `<span class="fd dog">DOG</span>` : "" };
+        const favSide = { name: g.fav, sp: has ? ` <span class="sp">(-${esc(g.spread)}${g.proj ? "*" : ""})</span>` : "", fd: has ? `<span class="fd fav">FAV</span>` : "" };
+        const dogSide = { name: g.dog, sp: has ? ` <span class="sp">(+${esc(g.spread)}${g.proj ? "*" : ""})</span>` : "", fd: has ? `<span class="fd dog">DOG</span>` : "" };
         const left = g.home === "DOG" ? dogSide : favSide;
         const right = g.home === "DOG" ? favSide : dogSide;
         const info = `${g.num}. ${esc(g.sport)}${g.home === "NEUTRAL" ? " · Neutral site" : ""}`;
