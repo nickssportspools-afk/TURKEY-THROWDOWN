@@ -46,6 +46,7 @@
   .opt:has(input:checked) { background: var(--gold-bg); }
   .opt:has(input:focus-visible) { outline: 2px solid var(--gold); outline-offset: -2px; }
   .sp { font-weight: 500; color: var(--gray); white-space: nowrap; }
+  .star { color: #000; font-weight: 800; font-size: 1.35em; line-height: 0; }
   .proj-note { font-size: 1.1rem; font-weight: 800; color: #000; line-height: 1.35; margin: 14px 4px 4px; }
   .tag { display: flex; gap: 6px; align-items: center; font-size: 11px; font-weight: 600; color: var(--gray); margin-top: 2px; }
   .opt.dog .tag { justify-content: flex-end; }
@@ -173,8 +174,8 @@
         <div class="head"><div>HOME</div><div>AWAY</div></div>`;
       grp.games.forEach(g => {
         const has = g.spread && Number(g.spread) !== 0;
-        const favSide = { name: g.fav, sp: has ? ` <span class="sp">(-${esc(g.spread)}${g.proj ? "*" : ""})</span>` : "", fd: has ? `<span class="fd fav">FAV</span>` : "" };
-        const dogSide = { name: g.dog, sp: has ? ` <span class="sp">(+${esc(g.spread)}${g.proj ? "*" : ""})</span>` : "", fd: has ? `<span class="fd dog">DOG</span>` : "" };
+        const favSide = { name: g.fav, sp: has ? ` <span class="sp">(-${esc(g.spread)}${g.proj ? '<b class="star">*</b>' : ""})</span>` : "", fd: has ? `<span class="fd fav">FAV</span>` : "" };
+        const dogSide = { name: g.dog, sp: has ? ` <span class="sp">(+${esc(g.spread)}${g.proj ? '<b class="star">*</b>' : ""})</span>` : "", fd: has ? `<span class="fd dog">DOG</span>` : "" };
         const left = g.home === "DOG" ? dogSide : favSide;
         const right = g.home === "DOG" ? favSide : dogSide;
         const info = `${g.num}. ${esc(g.sport)}${g.home === "NEUTRAL" ? " · Neutral site" : ""}`;
