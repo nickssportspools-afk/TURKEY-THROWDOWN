@@ -82,31 +82,42 @@
   tr:last-child td { border-bottom: 0; }
   tr:hover td { background: #faf8f1; }
 
-  /* ---------- Picks table: freeze first 3 columns (#, Matchup, Spread) ---------- */
+  /* ---------- Picks table: freeze the first 2 columns (#, Matchup); a 3rd fixed column (Spread) only if the sheet has one ---------- */
   #picks-tbl { position: relative; }
   #picks-tbl th, #picks-tbl td { box-sizing: border-box; }
-  #picks-tbl thead th:nth-child(-n+3) { z-index: 3; }
-  #picks-tbl thead th:nth-child(1),
-  #picks-tbl thead th:nth-child(2),
-  #picks-tbl thead th:nth-child(3) { position: sticky; background: var(--navy); }
-  #picks-tbl tbody td:nth-child(1),
-  #picks-tbl tbody td:nth-child(2),
-  #picks-tbl tbody td:nth-child(3) { position: sticky; background: #ffffff; z-index: 2; }
-  #picks-tbl th:nth-child(1),
-  #picks-tbl td:nth-child(1) { left: 0;     min-width: 44px;  max-width: 44px;  }
-  #picks-tbl th:nth-child(2),
-  #picks-tbl td:nth-child(2) { left: 44px;  min-width: 300px; max-width: 300px; white-space: normal; }
-  #picks-tbl th:nth-child(3),
-  #picks-tbl td:nth-child(3) { left: 344px; min-width: 90px;  max-width: 90px;
-                               border-right: 2px solid var(--navy); }
-  #picks-tbl thead th:nth-child(3) { border-right: 2px solid var(--gold); }
+  #picks-tbl thead th:nth-child(-n+2) { z-index: 3; }
+  #picks-tbl thead th:nth-child(1), #picks-tbl thead th:nth-child(2) { position: sticky; background: var(--navy); }
+  #picks-tbl tbody td:nth-child(1), #picks-tbl tbody td:nth-child(2) { position: sticky; background: #ffffff; z-index: 2; }
+  #picks-tbl th:nth-child(1), #picks-tbl td:nth-child(1) { left: 0;    min-width: 44px;  max-width: 44px; }
+  #picks-tbl th:nth-child(2), #picks-tbl td:nth-child(2) { left: 44px; min-width: 300px; max-width: 300px; white-space: normal;
+                                                        border-right: 2px solid var(--navy); }
+  #picks-tbl thead th:nth-child(2) { border-right: 2px solid var(--gold); }
+  #picks-tbl table.fz3 thead th:nth-child(3) { position: sticky; z-index: 3; left: 344px; min-width: 90px; max-width: 90px; background: var(--navy); border-right: 2px solid var(--gold); }
+  #picks-tbl table.fz3 tbody td:nth-child(3) { position: sticky; z-index: 2; left: 344px; min-width: 90px; max-width: 90px; background: #ffffff; border-right: 2px solid var(--navy); }
+  #picks-tbl table.fz3 th:nth-child(2), #picks-tbl table.fz3 td:nth-child(2) { border-right: 0; }
+  /* every entrant column is a fixed width; long entry names (headers) and long team names (picks) wrap onto more lines */
+  #picks-tbl table thead th:nth-child(n+3), #picks-tbl table tbody td:nth-child(n+3) { min-width: 150px; max-width: 170px; width: 160px; white-space: normal; overflow-wrap: break-word; }
+  #picks-tbl table thead th:nth-child(n+3) { line-height: 1.25; vertical-align: bottom; }
+  #picks-tbl table.fz3 thead th:nth-child(3), #picks-tbl table.fz3 tbody td:nth-child(3) { min-width: 90px; max-width: 90px; width: 90px; }
+  /* phones: a narrower frozen Matchup column so the entrants' picks have room on screen */
+  @media (max-width: 640px) {
+    #picks-tbl th:nth-child(2), #picks-tbl td:nth-child(2) { min-width: 150px; max-width: 150px; font-size: 12px; padding: 8px 8px; }
+    #picks-tbl th:nth-child(1), #picks-tbl td:nth-child(1) { min-width: 32px; max-width: 32px; padding: 8px 6px; }
+    #picks-tbl th:nth-child(2), #picks-tbl td:nth-child(2) { left: 32px; }
+    #picks-tbl table thead th:nth-child(n+3), #picks-tbl table tbody td:nth-child(n+3) { min-width: 110px; max-width: 130px; width: 120px; font-size: 12px; padding: 8px 8px; }
+    .games-compact th, .games-compact td { padding: 8px 8px; font-size: 13px; }
+    .games-compact td.team { min-width: 130px; }
+  }
   /* Preserve pick-cell colors even when sticky columns overlap them */
-  #picks-tbl tbody tr:hover td:nth-child(-n+3) { background: #faf8f1; }
+  #picks-tbl tbody tr:hover td:nth-child(-n+2) { background: #faf8f1; }
   /* Ensure the conditional-format green/red/gray still show on entrant cells */
   #picks-tbl tbody td.pick-correct { background: var(--green-bg) !important; }
   #picks-tbl tbody td.pick-wrong   { background: var(--red-bg)   !important; }
   #picks-tbl tbody td.pick-push    { background: var(--gray-bg)  !important; }
 
+   .games-compact td.team { white-space: normal; min-width: 170px; }
+  .games-compact .sp { color: var(--gray); font-weight: 600; white-space: nowrap; }
+  .games-compact td.score { white-space: nowrap; font-weight: 700; }
   .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700;
           letter-spacing: .03em; text-transform: uppercase; }
   .pill-NFL    { background: #fff3cd; color: #854d0e; }
@@ -312,6 +323,26 @@
     hdr.forEach((v, i) => { if (v) last = i; });
     const label = (v, i) => i === 0 ? "#" : v;
     const U = hdr.map(v => v.toUpperCase());
+    const iHome = U.indexOf("HOME"), iAway = U.indexOf("AWAY");
+    if (iHome >= 0 && iAway >= 0 && U.indexOf("HOME SCORE") >= 0) {
+      // HOME / AWAY layout: show each team's spread beside its name and the two scores as one "Score" column
+      const iDate = U.indexOf("DATE"), iSport = U.indexOf("SPORT"), iHS = U.indexOf("HOME SCORE"), iAS = U.indexOf("AWAY SCORE"), iATS = U.indexOf("ATS WINNER");
+      const iHSp = U.indexOf("SPREAD", iHome), iASp = U.indexOf("SPREAD", iAway);
+      const cell = (r, i) => i >= 0 ? (r[i] || "").toString().trim() : "";
+      const team = (r, iT, iS) => `<td class="team">${cell(r, iT)}${cell(r, iS) ? ` <span class="sp">(${cell(r, iS)})</span>` : ""}</td>`;
+      let g = `<table class="games-compact"><thead><tr><th>#</th><th>Date</th><th>Sport</th><th>Home</th><th>Away</th><th>Score</th><th>ATS Winner</th></tr></thead><tbody>`;
+      for (let i = h + 1; i < rows.length; i++) {
+        const r = rows[i] || [];
+        const n = parseInt(r[0]);
+        if (!Number.isFinite(n) || n < 1 || n > 25) break;
+        const sport = cell(r, iSport), ats = cell(r, iATS), hs = cell(r, iHS), as_ = cell(r, iAS);
+        g += `<tr><td>${n}</td><td>${cell(r, iDate)}</td><td>${sport ? `<span class="pill pill-${sport}">${sport}</span>` : ""}</td>` +
+             team(r, iHome, iHSp) + team(r, iAway, iASp) +
+             `<td class="score">${hs !== "" && as_ !== "" ? hs + " &ndash; " + as_ : '<span class="pending">&mdash;</span>'}</td>` +
+             `<td>${!ats ? '<span class="pending">&mdash;</span>' : ats === "PUSH" ? '<span class="push-team">PUSH</span>' : `<span class="winner-team">${ats}</span>`}</td></tr>`;
+      }
+      return g + `</tbody></table>`;
+    }
     let html = `<table><thead><tr>`;
     for (let c = 0; c <= last; c++) html += `<th>${label(hdr[c], c)}</th>`;
     html += `</tr></thead><tbody>`;
@@ -454,7 +485,7 @@
     const nameCols = [];
     const hdrU = hdr.map(v => (v || "").toString().trim().toUpperCase());
     const matchupCol = hdrU.indexOf("MATCHUP") >= 0 ? hdrU.indexOf("MATCHUP") : 3;
-    const spreadCol  = hdrU.indexOf("SPREAD")  >= 0 ? hdrU.indexOf("SPREAD")  : 4;
+    const spreadCol  = hdrU.indexOf("SPREAD")  >= 0 ? hdrU.indexOf("SPREAD")  : -1;   // -1 = this Picks tab has no Spread column
     const fixedIdx = hdrU.map((v, i) => ["DATE", "DAY", "SPORT", "MATCHUP", "SPREAD"].includes(v) ? i : -1);
     const firstNameCol = Math.max(matchupCol, spreadCol, ...fixedIdx) + 1;
     for (let c = firstNameCol; c < hdr.length; c++) {
@@ -495,7 +526,7 @@
     if (!hasEntrants) {
       html += `<div style="padding:12px 16px;background:#fff7d6;border-left:4px solid var(--gold);margin:0 0 12px;font-size:13px;color:var(--gray)">No entries yet. Picks appear here after the entry deadline.</div>`;
     }
-    html += `<table>
+    html += `<table class="${firstNameCol >= 4 ? "fz3" : ""}">
       <thead><tr>
         <th>#</th>`;
     for (let c = 1; c < firstNameCol; c++) html += `<th>${(hdr[c] || "").trim()}</th>`;
