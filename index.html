@@ -82,42 +82,34 @@
   tr:last-child td { border-bottom: 0; }
   tr:hover td { background: #faf8f1; }
 
-  /* ---------- Picks table: freeze the first 2 columns (#, Matchup); a 3rd fixed column (Spread) only if the sheet has one ---------- */
-  #picks-tbl { position: relative; }
-  #picks-tbl th, #picks-tbl td { box-sizing: border-box; }
-  #picks-tbl thead th:nth-child(-n+2) { z-index: 3; }
-  #picks-tbl thead th:nth-child(1), #picks-tbl thead th:nth-child(2) { position: sticky; background: var(--navy); }
-  #picks-tbl tbody td:nth-child(1), #picks-tbl tbody td:nth-child(2) { position: sticky; background: #ffffff; z-index: 2; }
-  #picks-tbl th:nth-child(1), #picks-tbl td:nth-child(1) { left: 0;    min-width: 44px;  max-width: 44px; }
-  #picks-tbl th:nth-child(2), #picks-tbl td:nth-child(2) { left: 44px; min-width: 300px; max-width: 300px; white-space: normal;
-                                                        border-right: 2px solid var(--navy); }
-  #picks-tbl thead th:nth-child(2) { border-right: 2px solid var(--gold); }
-  #picks-tbl table.fz3 thead th:nth-child(3) { position: sticky; z-index: 3; left: 344px; min-width: 90px; max-width: 90px; background: var(--navy); border-right: 2px solid var(--gold); }
-  #picks-tbl table.fz3 tbody td:nth-child(3) { position: sticky; z-index: 2; left: 344px; min-width: 90px; max-width: 90px; background: #ffffff; border-right: 2px solid var(--navy); }
-  #picks-tbl table.fz3 th:nth-child(2), #picks-tbl table.fz3 td:nth-child(2) { border-right: 0; }
-  /* every entrant column is a fixed width; long entry names (headers) and long team names (picks) wrap onto more lines */
-  #picks-tbl table thead th:nth-child(n+3), #picks-tbl table tbody td:nth-child(n+3) { min-width: 150px; max-width: 170px; width: 160px; white-space: normal; overflow-wrap: break-word; }
-  #picks-tbl table thead th:nth-child(n+3) { line-height: 1.25; vertical-align: bottom; }
-  #picks-tbl table.fz3 thead th:nth-child(3), #picks-tbl table.fz3 tbody td:nth-child(3) { min-width: 90px; max-width: 90px; width: 90px; }
-  /* phones: a narrower frozen Matchup column so the entrants' picks have room on screen */
-  @media (max-width: 640px) {
-    #picks-tbl th:nth-child(2), #picks-tbl td:nth-child(2) { min-width: 150px; max-width: 150px; font-size: 12px; padding: 8px 8px; }
-    #picks-tbl th:nth-child(1), #picks-tbl td:nth-child(1) { min-width: 32px; max-width: 32px; padding: 8px 6px; }
-    #picks-tbl th:nth-child(2), #picks-tbl td:nth-child(2) { left: 32px; }
-    #picks-tbl table thead th:nth-child(n+3), #picks-tbl table tbody td:nth-child(n+3) { min-width: 110px; max-width: 130px; width: 120px; font-size: 12px; padding: 8px 8px; }
-    .games-compact th, .games-compact td { padding: 8px 8px; font-size: 13px; }
-    #picks-tbl tbody tr.tb-row td { border-top: 2px solid var(--navy); font-weight: 700; background: #f7f5ee; }
-  #picks-tbl tbody tr.tb-row td:nth-child(-n+2) { background: #f7f5ee; }
-  .badge-closest { display: inline-block; margin-left: 4px; padding: 1px 7px; border-radius: 999px; font-size: 10px; font-weight: 700; background: var(--green-bg); color: var(--green); }
-  .games-compact td.team { min-width: 130px; }
-  }
-  /* Preserve pick-cell colors even when sticky columns overlap them */
-  #picks-tbl tbody tr:hover td:nth-child(-n+2) { background: #faf8f1; }
-  /* Ensure the conditional-format green/red/gray still show on entrant cells */
+  /* ---------- Picks table: ONE ROW PER ENTRY (alphabetical), one column per game ---------- */
+  #picks-tbl { overflow: visible; position: relative; }
+  #picks-tbl .picks-tools { display: flex; gap: 12px; align-items: center; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+  #picks-tbl .picks-tools input { flex: 1 1 220px; max-width: 360px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; font: inherit; }
+  #picks-tbl .picks-tools span { color: var(--gray); font-size: 13px; }
+  #picks-tbl .picks-scroll { overflow: auto; max-height: 78vh; -webkit-overflow-scrolling: touch; }
+  table.picks-by-entry { border-collapse: separate; border-spacing: 0; width: max-content; min-width: 100%; }
+  .picks-by-entry th, .picks-by-entry td { white-space: normal; overflow-wrap: break-word; vertical-align: top; box-sizing: border-box; min-width: 140px; max-width: 160px; width: 150px; padding: 8px 10px; }
+  .picks-by-entry thead th { position: sticky; top: 0; z-index: 3; background: var(--navy); line-height: 1.2; vertical-align: bottom; }
+  .picks-by-entry thead th b { display: block; font-size: 13px; }
+  .picks-by-entry thead th .gm { display: block; margin-top: 3px; font-size: 10px; font-weight: 500; text-transform: none; letter-spacing: 0; opacity: .92; }
+  .picks-by-entry .c-name { position: sticky; left: 0; z-index: 2; background: #ffffff; min-width: 150px; max-width: 150px; width: 150px; font-weight: 700; border-right: 2px solid var(--navy); }
+  .picks-by-entry thead th.c-name { z-index: 4; background: var(--navy); border-right: 2px solid var(--gold); }
+  .picks-by-entry tbody tr:hover td.c-name { background: #faf8f1; }
+  .picks-by-entry td.tb-cell { font-weight: 700; }
+  /* the green/red/gray grading must show on the pick cells */
   #picks-tbl tbody td.pick-correct { background: var(--green-bg) !important; }
   #picks-tbl tbody td.pick-wrong   { background: var(--red-bg)   !important; }
   #picks-tbl tbody td.pick-push    { background: var(--gray-bg)  !important; }
-
+  @media (max-width: 640px) {
+    .picks-by-entry th, .picks-by-entry td { min-width: 110px; max-width: 130px; width: 120px; font-size: 12px; padding: 7px 8px; }
+    .picks-by-entry .c-name { min-width: 105px; max-width: 105px; width: 105px; }
+    .games-compact th, .games-compact td { padding: 8px 8px; font-size: 13px; }
+    .games-compact td.team { min-width: 130px; }
+  }
+    .games-compact th, .games-compact td { padding: 8px 8px; font-size: 13px; }
+  .badge-closest { display: inline-block; margin-left: 4px; padding: 1px 7px; border-radius: 999px; font-size: 10px; font-weight: 700; background: var(--green-bg); color: var(--green); }
+  .games-compact td.team { min-width: 130px; }
    .games-compact td.team { white-space: normal; min-width: 170px; }
   .games-compact .sp { color: var(--gray); font-weight: 600; white-space: nowrap; }
   .games-compact td.score { white-space: nowrap; font-weight: 700; text-align: center; }
@@ -562,58 +554,66 @@
       }
     }
 
-    const gameInfo = getGameInfo(gamesRows);
-    let html = "";
-    if (!hasEntrants) {
-      html += `<div style="padding:12px 16px;background:#fff7d6;border-left:4px solid var(--gold);margin:0 0 12px;font-size:13px;color:var(--gray)">No entries yet. Picks appear here after the entry deadline.</div>`;
-    }
-    html += `<table class="${firstNameCol >= 4 ? "fz3" : ""}">
-      <thead><tr>
-        <th>#</th>`;
-    for (let c = 1; c < firstNameCol; c++) html += `<th>${(hdr[c] || "").trim()}</th>`;
-    html += ``;
-    for (const nc of nameCols) html += `<th>${nc.name}</th>`;
-    html += `</tr></thead><tbody>`;
-
-    // Read game rows starting from the row after the header; stop at first row whose # isn't 1-25
+    // ---- one ROW per entry (alphabetical), one COLUMN per game ----
+    const gameCols = [];
     for (let i = hdrIdx + 1; i < picksRows.length; i++) {
       const r = picksRows[i];
       if (!r) continue;
       const gnum = parseInt(r[0]);
       if (!Number.isFinite(gnum) || gnum < 1 || gnum > 25) break;
-      const matchup = r[matchupCol] || "";
-      const spread  = (r[spreadCol] || "").toString().replace(/^[-−]/, "");
-      const ats = atsByGame[gnum] || "";
-      const spreadDisplay = spread === "TBD" ? "TBD" : `−${spread}`;
-      html += `<tr><td>${gnum}</td>`;
-      for (let c = 1; c < firstNameCol; c++) {
-        const v = (r[c] || "").toString().trim();
-        html += hdrU[c] === "SPORT" && v ? `<td><span class="pill pill-${v}">${v}</span></td>` : `<td>${v}</td>`;
-      }
-      for (const nc of nameCols) {
-        const pick = (r[nc.col] || "").trim();
-        let cls = "pick-pending";
-        if (pick && ats) {
-          if (ats === "PUSH") cls = "pick-push";
-          else if (ats === pick) cls = "pick-correct";
-          else cls = "pick-wrong";
-        }
-        html += `<td class="${cls}">${pick || "—"}</td>`;
-      }
-      html += `</tr>`;
+      gameCols.push({ gnum, matchup: (r[matchupCol] || "").toString().trim().replace(/\s+/g, " "), ats: atsByGame[gnum] || "", row: r });
     }
     const tbd = tiebreakData(picksRows, gamesRows);
-    if (tbd.row) {
-      const diffs = nameCols.map(nc => { const v = tbd.byName[nc.name.toUpperCase()]; return (v !== undefined && tbd.actual !== null) ? Math.abs(v - tbd.actual) : null; });
-      const best = diffs.filter(d => d !== null).reduce((m, d) => Math.min(m, d), Infinity);
-      html += `<tr class="tb-row"><td></td><td><b>TIEBREAKER</b><br><span style="font-weight:400">Total points in the Monday night game${tbd.actual !== null ? ` (actual: ${tbd.actual})` : " (game not final yet)"}</span></td>`;
-      nameCols.forEach((nc, k) => {
-        const v = tbd.byName[nc.name.toUpperCase()];
-        html += `<td class="tb-cell">${v !== undefined ? v : "&mdash;"}${diffs[k] !== null && diffs[k] === best ? ' <span class="badge-closest">closest</span>' : ""}</td>`;
-      });
-      html += `</tr>`;
+    const people = nameCols.map(nc => ({ name: nc.name, col: nc.col, tb: tbd.byName[nc.name.toUpperCase()] }));
+    people.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
+    const diffs = people.map(pp => (pp.tb !== undefined && tbd.actual !== null) ? Math.abs(pp.tb - tbd.actual) : null);
+    const best = diffs.filter(dd => dd !== null).reduce((m, dd) => Math.min(m, dd), Infinity);
+    const esc = t => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
+
+    let html = "";
+    if (!hasEntrants) {
+      html += `<div style="padding:12px 16px;background:#fff7d6;border-left:4px solid var(--gold);margin:0 0 12px;font-size:13px;color:var(--gray)">No entries yet. Picks appear here after the entry deadline.</div>`;
+    } else {
+      html += `<div class="picks-tools"><input id="picks-find" type="search" placeholder="Find your entry&hellip;" autocomplete="off"><span id="picks-count">${people.length} entries</span></div>`;
     }
-    return html + `</tbody></table>`;
+    html += `<div class="picks-scroll"><table class="picks-by-entry"><thead><tr><th class="c-name"><b>Entry</b></th>`;
+    for (const g of gameCols) html += `<th><b>G${g.gnum}</b><span class="gm">${esc(g.matchup)}</span></th>`;
+    if (tbd.row) html += `<th><b>Tiebreaker</b><span class="gm">Total points in the Monday night game${tbd.actual !== null ? " (actual: " + tbd.actual + ")" : " (not final yet)"}</span></th>`;
+    html += `</tr></thead><tbody>`;
+    people.forEach((pp, k) => {
+      html += `<tr data-name="${esc(pp.name.toLowerCase())}"><td class="c-name">${esc(pp.name)}</td>`;
+      for (const g of gameCols) {
+        const pick = (g.row[pp.col] || "").trim();
+        let cls = "pick-pending";
+        if (pick && g.ats) {
+          if (g.ats === "PUSH") cls = "pick-push";
+          else if (g.ats === pick) cls = "pick-correct";
+          else cls = "pick-wrong";
+        }
+        html += `<td class="${cls}">${pick ? esc(pick) : "&mdash;"}</td>`;
+      }
+      if (tbd.row) html += `<td class="tb-cell">${pp.tb !== undefined ? pp.tb : "&mdash;"}${diffs[k] !== null && diffs[k] === best ? ' <span class="badge-closest">closest</span>' : ""}</td>`;
+      html += `</tr>`;
+    });
+    return html + `</tbody></table></div>`;
+  }
+
+  // "Find your entry" box: filters the Picks rows as you type, and survives the once-a-minute refresh
+  let picksFilter = "";
+  function applyPicksFilter() {
+    const inp = document.getElementById("picks-find");
+    if (!inp) return;
+    inp.value = picksFilter;
+    const q = picksFilter.trim().toLowerCase();
+    let shown = 0;
+    document.querySelectorAll("#picks-tbl tbody tr").forEach(tr => {
+      const ok = !q || (tr.dataset.name || "").indexOf(q) >= 0;
+      tr.style.display = ok ? "" : "none"; if (ok) shown++;
+    });
+    const total = document.querySelectorAll("#picks-tbl tbody tr").length;
+    const cnt = document.getElementById("picks-count");
+    if (cnt) cnt.textContent = q ? `${shown} of ${total} entries` : `${total} entries`;
+    inp.oninput = () => { picksFilter = inp.value; applyPicksFilter(); };
   }
 
   function renderAdminForm(gamesRows) {
@@ -859,6 +859,7 @@
       document.getElementById("games-tbl").innerHTML     = renderGames(games);
       document.getElementById("standings-tbl").innerHTML = renderStandings(standings, picks, games);
       document.getElementById("picks-tbl").innerHTML     = renderPicks(picks, games);
+      applyPicksFilter();
       if (IS_ADMIN) {
         document.getElementById("admin-form-wrap").innerHTML = renderAdminForm(games);
         wireAdminButtons();
