@@ -237,6 +237,15 @@
       <label for="admin-key"><b>Admin key</b> (stored only in your browser):</label>
       <input id="admin-key" type="password" placeholder="paste key here" autocomplete="off">
     </div>
+    <div class="card" id="auto-card" style="padding:12px 16px;margin:0 0 12px;">
+      <label style="display:flex;gap:8px;align-items:center;font-size:14px;"><input type="checkbox" id="auto-on" checked>
+        <span><b>Auto-fill final scores from ESPN</b> (checks every minute while this page is open)</span></label>
+      <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="save-btn" id="auto-now" type="button" style="padding:7px 12px;">Check ESPN now</button>
+        <button class="save-btn" id="auto-test" type="button" style="padding:7px 12px;background:#555;">Test matching (saves nothing)</button>
+      </div>
+      <div id="auto-status" class="subtle" style="margin-top:8px;font-size:13px;">Not run yet.</div>
+    </div>
     <div class="card" id="admin-form-wrap">
       <div class="empty">Loading games…</div>
     </div>
@@ -622,6 +631,108 @@
     });
   }
 
+  // ===================================================================
+  // ADMIN — AUTO-FILL FINAL SCORES FROM ESPN (runs in your own browser while the ?admin page is open)
+  // Reads ESPN's public scoreboards, and when a game is FINAL and its score boxes on the Games tab are still empty,
+  // saves the score through the same key-protected save as the Save buttons. Typed scores are never overwritten.
+  // ===================================================================
+  const AUTO = { YEAR: 2026, START: "20261126", END: "20261202" };
+  const ESPN_PATHS = { NFL: "football/nfl", NCAAFB: "football/college-football", NBA: "basketball/nba", NHL: "hockey/nhl" };
+  const ESPN_EXTRA = { NCAAFB: "&groups=80&limit=400" };
+  const autoState = { running: false, bad: false, manualAt: 0 };
+
+  function etYmd() {
+    if (window.__TT_TODAY) return window.__TT_TODAY;
+    return new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date()).replace(/-/g, "");
+  }
+  function normTeam(s) {
+    let t = String(s || "").toUpperCase().replace(/&/g, " AND ").replace(/[^A-Z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+    t = t.replace(/\bST\b/g, "STATE");
+    return t.replace(/^NY /, "NEW YORK ").replace(/^NJ /, "NEW YORK ").replace(/^LA /, "LOS ANGELES ").replace(/^KC /, "KANSAS CITY ");
+  }
+  function competitorIs(sheetName, team, strict) {
+    const N = normTeam(sheetName);
+    if (!N || !team) return false;
+    const full = [team.displayName, (team.location || "") + " " + (team.name || ""), team.location, team.abbreviation].map(normTeam);
+    if (full.indexOf(N) >= 0) return true;
+    if (strict) return false;
+    const nick = normTeam(team.name);
+    return !!nick && (N === nick || N.slice(-(nick.length + 1)) === " " + nick);
+  }
+  function findEvent(events, home, away) {
+    for (const strict of [true, false]) {
+      for (const ev of events) {
+        const cs = ev.competitions && ev.competitions[0] && ev.competitions[0].competitors;
+        if (!cs || cs.length !== 2) continue;
+        for (const pr of [[0, 1], [1, 0]]) {
+          if (competitorIs(home, cs[pr[0]].team, strict) && competitorIs(away, cs[pr[1]].team, strict)) {
+            return { final: !!(ev.status && ev.status.type && ev.status.type.completed), homeScore: parseInt(cs[pr[0]].score, 10), awayScore: parseInt(cs[pr[1]].score, 10) };
+          }
+        }
+      }
+    }
+    return null;
+  }
+  function nextDayYmd(ymd) {
+    const d = new Date(Date.UTC(+ymd.slice(0, 4), +ymd.slice(4, 6) - 1, +ymd.slice(6, 8) + 1));
+    return d.getUTCFullYear() + String(d.getUTCMonth() + 1).padStart(2, "0") + String(d.getUTCDate()).padStart(2, "0");
+  }
+  async function espnDay(sport, ymd, cache2) {
+    const k = sport + "|" + ymd;
+    if (!cache2[k]) {
+      try {
+        const r = await fetch(`https://site.api.espn.com/apis/site/v2/sports/${ESPN_PATHS[sport]}/scoreboard?dates=${ymd}${ESPN_EXTRA[sport] || ""}`);
+        cache2[k] = r.ok ? ((await r.json()).events || []) : [];
+      } catch (e) { cache2[k] = []; }
+    }
+    return cache2[k];
+  }
+  function setAutoStatus(msg) { const el = document.getElementById("auto-status"); if (el) el.textContent = msg; }
+
+  // mode: "save" (normal), "check" (just see whether every game is found; saves nothing)
+  async function autoFillScores(mode) {
+    if (autoState.running || !cache.games) return;
+    autoState.running = true;
+    try {
+      const info = getGameInfo(cache.games), c2 = {}, today = etYmd();
+      let games = 0, found = 0, saved = 0, had = 0; const missing = [];
+      for (const n of Object.keys(info).map(Number).sort((a, b) => a - b)) {
+        const g = info[n]; games++;
+        const sport = (g.sport || "").toUpperCase(), m = /(\d{1,2})\/(\d{1,2})/.exec(g.date || "");
+        const home = g.home || g.fav, away = (g.home && g.home === g.fav) ? g.dog : (g.home ? g.fav : g.dog);
+        if (!m || !ESPN_PATHS[sport]) { missing.push(n + " (date or sport not readable)"); continue; }
+        const day = AUTO.YEAR + m[1].padStart(2, "0") + m[2].padStart(2, "0");
+        const hasScores = String(g.fs).trim() !== "" || String(g.ds).trim() !== "";
+        if (mode === "save") { if (hasScores) { had++; continue; } if (day > today) continue; }
+        const evs = (await espnDay(sport, day, c2)).concat(await espnDay(sport, nextDayYmd(day), c2));
+        const hit = findEvent(evs, home, away);
+        if (!hit) { missing.push(n + ". " + home + " vs " + away); continue; }
+        found++;
+        if (mode !== "save" || !hit.final || isNaN(hit.homeScore) || isNaN(hit.awayScore)) continue;
+        await postScore(n, hit.homeScore, hit.awayScore);     // home score, away score (same call the Save button makes)
+        saved++;
+      }
+      const t = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      if (mode === "check") setAutoStatus(`Test at ${t}: found ${found} of ${games} games on ESPN.` + (missing.length ? " NOT FOUND: " + missing.join("; ") : " Every game was found."));
+      else setAutoStatus(`Checked at ${t}: ${saved} new final score${saved === 1 ? "" : "s"} saved, ${had} game${had === 1 ? "" : "s"} already had scores.` + (missing.length ? " Not found on ESPN: " + missing.join("; ") : ""));
+      if (saved > 0) loadAll();
+    } catch (e) {
+      setAutoStatus("Auto-fill stopped: " + e.message + (/key/i.test(e.message) ? " (paste your admin key in the box above)" : ""));
+      autoState.bad = true;
+    } finally { autoState.running = false; }
+  }
+  async function autoTick() {
+    if (!IS_ADMIN || !document.getElementById("auto-on").checked) return;
+    const today = etYmd();
+    const recentManual = Date.now() - autoState.manualAt < 10 * 60 * 1000;      // don't overwrite a result you just asked for
+    if (today < AUTO.START || today > AUTO.END) { if (!recentManual) setAutoStatus(`Auto-fill only runs ${AUTO.START.slice(4, 6)}/${AUTO.START.slice(6)} to ${AUTO.END.slice(4, 6)}/${AUTO.END.slice(6)}. Use "Check ESPN now" any time.`); return; }
+    if (!document.getElementById("admin-key").value.trim()) { if (!recentManual) setAutoStatus("Paste your admin key in the box above so scores can be saved."); return; }
+    autoState.bad = false;
+    await autoFillScores("save");
+  }
+  document.getElementById("auto-now").onclick = () => { autoState.bad = false; autoState.manualAt = Date.now(); if (!document.getElementById("admin-key").value.trim()) { alert("Enter your admin key first."); return; } autoFillScores("save"); };
+  document.getElementById("auto-test").onclick = () => { autoState.manualAt = Date.now(); autoFillScores("check"); };
+
   // Persist admin key in localStorage so user doesn't retype each visit
   const keyInput = document.getElementById("admin-key");
   keyInput.value = localStorage.getItem("ttd-admin-key") || "";
@@ -685,6 +796,7 @@
   document.getElementById("refresh-btn").onclick = loadAll;
   loadAll();
   setInterval(loadAll, REFRESH_MS);
+  if (IS_ADMIN) { setTimeout(autoTick, 15000); setInterval(autoTick, 60000); }
 </script>
 </body>
 </html>
