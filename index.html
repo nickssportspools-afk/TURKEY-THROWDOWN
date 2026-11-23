@@ -628,6 +628,16 @@
   keyInput.addEventListener("input", () => localStorage.setItem("ttd-admin-key", keyInput.value));
 
   // ===================================================================
+  // ADMIN TAB: only for the owner. It is hidden from everyone unless the address ends in ?admin
+  // (the score box is never even built for other visitors; the secret key still protects saving).
+  // ===================================================================
+  const IS_ADMIN = new URLSearchParams(location.search).has("admin");
+  if (!IS_ADMIN) {
+    const ab = document.querySelector('nav.tabs button[data-tab="admin"]'); if (ab) ab.style.display = "none";
+    const ap = document.getElementById("panel-admin"); if (ap) ap.style.display = "none";
+  }
+
+  // ===================================================================
   // TABS
   // ===================================================================
   document.querySelectorAll("nav.tabs button").forEach(btn => {
@@ -655,8 +665,10 @@
       document.getElementById("games-tbl").innerHTML     = renderGames(games);
       document.getElementById("standings-tbl").innerHTML = renderStandings(standings);
       document.getElementById("picks-tbl").innerHTML     = renderPicks(picks, games);
-      document.getElementById("admin-form-wrap").innerHTML = renderAdminForm(games);
-      wireAdminButtons();
+      if (IS_ADMIN) {
+        document.getElementById("admin-form-wrap").innerHTML = renderAdminForm(games);
+        wireAdminButtons();
+      }
       const t = new Date();
       document.getElementById("last-update").textContent =
         "Updated " + t.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
