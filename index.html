@@ -451,12 +451,16 @@
 
   function renderStandings(rows, picksRows, gamesRows) {
     // Standings layout:
-    //   row 4 (idx 3): PLACE | Player | Points | Possible Remaining | Payout
-    //   rows 5..104 (idx 4..103) leaderboard rows
+    //   header row: PLACE | Player | Points | Possible Remaining | (Tiebreaker) | Payout
+    //   leaderboard rows follow. Tiebreaker / Payout columns are found by their heading, so adding a column doesn't break this.
     if (!rows.length) return `<div class="empty">No data.</div>`;
+    let hdrRow = rows.findIndex((r, i) => i < 10 && (r || []).length > 1 && String(r[1] || "").trim().toUpperCase() === "PLAYER");
+    if (hdrRow < 0) hdrRow = 3;
+    const HU = (rows[hdrRow] || []).map(v => String(v || "").toUpperCase().replace(/[^A-Z]/g, ""));   // "Tie-Breaker" and "Tiebreaker" both become TIEBREAKER
+    const tbCol = HU.indexOf("TIEBREAKER"), payCol = HU.indexOf("PAYOUT") >= 0 ? HU.indexOf("PAYOUT") : 4;
     // Filter to entries with a name
     const entries = [];
-    for (let i = 4; i < rows.length; i++) {
+    for (let i = hdrRow + 1; i < rows.length; i++) {
       const r = rows[i];
       if (!r) continue;
       const name = (r[1] || "").trim();
@@ -464,12 +468,13 @@
       const place = parseInt(r[0]) || 0;
       const pts   = parseFloat(r[2]) || 0;
       const rem   = r[3] !== undefined && r[3] !== "" ? parseFloat(r[3]) : null;
-      const pay   = (r[4] || "").trim();
-      entries.push({ place, name, pts, rem, pay });
+      const pay   = (r[payCol] || "").trim();
+      const tbSheet = tbCol >= 0 ? parseFloat(String(r[tbCol] || "").trim()) : NaN;
+      entries.push({ place, name, pts, rem, pay, tbSheet: Number.isFinite(tbSheet) ? tbSheet : undefined });
     }
     if (!entries.length) return `<div class="empty">No entries yet.</div>`;
-    const tb = tiebreakData(picksRows, gamesRows), hasTb = Object.keys(tb.byName).length > 0;
-    entries.forEach(e => { e.tb = tb.byName[e.name.toUpperCase()]; e.diff = (e.tb !== undefined && tb.actual !== null) ? Math.abs(e.tb - tb.actual) : Infinity; });
+    const tb = tiebreakData(picksRows, gamesRows), hasTb = Object.keys(tb.byName).length > 0 || tbCol >= 0;
+    entries.forEach(e => { e.tb = e.tbSheet !== undefined ? e.tbSheet : tb.byName[e.name.toUpperCase()]; e.diff = (e.tb !== undefined && tb.actual !== null) ? Math.abs(e.tb - tb.actual) : Infinity; });
     // points first; then (once Monday's game is final) the guess closest to the actual total; then name
     entries.sort((a, b) => (b.pts - a.pts) || (tb.actual !== null && a.diff !== b.diff ? (a.diff < b.diff ? -1 : 1) : 0) || a.name.localeCompare(b.name));
 
