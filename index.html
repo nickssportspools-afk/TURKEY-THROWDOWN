@@ -117,7 +117,8 @@
 
    .games-compact td.team { white-space: normal; min-width: 170px; }
   .games-compact .sp { color: var(--gray); font-weight: 600; white-space: nowrap; }
-  .games-compact td.score { white-space: nowrap; font-weight: 700; }
+  .games-compact td.score { white-space: nowrap; font-weight: 700; text-align: center; }
+  .games-compact th:nth-child(6), .games-compact th:nth-child(7) { text-align: center; }
   .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700;
           letter-spacing: .03em; text-transform: uppercase; }
   .pill-NFL    { background: #fff3cd; color: #854d0e; }
@@ -330,7 +331,7 @@
       const iHSp = U.indexOf("SPREAD", iHome), iASp = U.indexOf("SPREAD", iAway);
       const cell = (r, i) => i >= 0 ? (r[i] || "").toString().trim() : "";
       const team = (r, iT, iS) => `<td class="team">${cell(r, iT)}${cell(r, iS) ? ` <span class="sp">(${cell(r, iS)})</span>` : ""}</td>`;
-      let g = `<table class="games-compact"><thead><tr><th>#</th><th>Date</th><th>Sport</th><th>Home</th><th>Away</th><th>Score</th><th>ATS Winner</th></tr></thead><tbody>`;
+      let g = `<table class="games-compact"><thead><tr><th>#</th><th>Date</th><th>Sport</th><th>Home</th><th>Away</th><th>Home Score</th><th>Away Score</th><th>ATS Winner</th></tr></thead><tbody>`;
       for (let i = h + 1; i < rows.length; i++) {
         const r = rows[i] || [];
         const n = parseInt(r[0]);
@@ -338,7 +339,7 @@
         const sport = cell(r, iSport), ats = cell(r, iATS), hs = cell(r, iHS), as_ = cell(r, iAS);
         g += `<tr><td>${n}</td><td>${cell(r, iDate)}</td><td>${sport ? `<span class="pill pill-${sport}">${sport}</span>` : ""}</td>` +
              team(r, iHome, iHSp) + team(r, iAway, iASp) +
-             `<td class="score">${hs !== "" && as_ !== "" ? hs + " &ndash; " + as_ : '<span class="pending">&mdash;</span>'}</td>` +
+             `<td class="score">${hs !== "" ? hs : '<span class="pending">&mdash;</span>'}</td><td class="score">${as_ !== "" ? as_ : '<span class="pending">&mdash;</span>'}</td>` +
              `<td>${!ats ? '<span class="pending">&mdash;</span>' : ats === "PUSH" ? '<span class="push-team">PUSH</span>' : `<span class="winner-team">${ats}</span>`}</td></tr>`;
       }
       return g + `</tbody></table>`;
