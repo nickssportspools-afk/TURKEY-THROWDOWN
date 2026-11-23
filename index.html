@@ -106,7 +106,10 @@
     #picks-tbl th:nth-child(2), #picks-tbl td:nth-child(2) { left: 32px; }
     #picks-tbl table thead th:nth-child(n+3), #picks-tbl table tbody td:nth-child(n+3) { min-width: 110px; max-width: 130px; width: 120px; font-size: 12px; padding: 8px 8px; }
     .games-compact th, .games-compact td { padding: 8px 8px; font-size: 13px; }
-    .games-compact td.team { min-width: 130px; }
+    #picks-tbl tbody tr.tb-row td { border-top: 2px solid var(--navy); font-weight: 700; background: #f7f5ee; }
+  #picks-tbl tbody tr.tb-row td:nth-child(-n+2) { background: #f7f5ee; }
+  .badge-closest { display: inline-block; margin-left: 4px; padding: 1px 7px; border-radius: 999px; font-size: 10px; font-weight: 700; background: var(--green-bg); color: var(--green); }
+  .games-compact td.team { min-width: 130px; }
   }
   /* Preserve pick-cell colors even when sticky columns overlap them */
   #picks-tbl tbody tr:hover td:nth-child(-n+2) { background: #faf8f1; }
@@ -204,9 +207,9 @@
 <nav class="tabs">
   <div class="tabs-inner" role="tablist">
     <button data-tab="rules"     class="active" role="tab">Rules</button>
+    <button data-tab="standings"            role="tab">Standings</button>
     <button data-tab="picks"                role="tab">Picks</button>
     <button data-tab="games"                role="tab">Games</button>
-    <button data-tab="standings"            role="tab">Standings</button>
     <button data-tab="admin"                role="tab">Admin</button>
   </div>
 </nav>
@@ -238,7 +241,7 @@
 
   <section id="panel-standings" class="panel">
     <h2>Standings</h2>
-    <p class="subtle">Live leaderboard. Possible Remaining = current points + ungraded games where you've made a pick.</p>
+    <p class="subtle">Live leaderboard. Possible Remaining = current points + ungraded games where you've made a pick. Ties in points are broken by the Monday night total: the closest guess ranks higher.</p>
     <div class="card"><div class="table-wrap" id="standings-tbl"><div class="empty">Loading standings…</div></div></div>
   </section>
 
@@ -418,7 +421,35 @@
     return info;
   }
 
-  function renderStandings(rows) {
+  // ===== Tiebreaker: total points in the Monday night game =====
+  // At the deadline the Picks tab gets a "TIEBREAKER..." row (each entrant's guess). The actual total is game 25's two scores.
+  function tiebreakData(picksRows, gamesRows) {
+    const out = { byName: {}, actual: null, row: null };
+    const hdrIdx = (picksRows || []).findIndex(r => (r || []).some(v => String(v || "").trim().toUpperCase() === "MATCHUP"));
+    if (hdrIdx >= 0) {
+      const hdr = picksRows[hdrIdx], mc = hdr.map(v => String(v || "").trim().toUpperCase()).indexOf("MATCHUP");
+      for (let i = hdrIdx + 1; i < picksRows.length; i++) {
+        const r = picksRows[i] || [];
+        if (String(r[mc] || "").trim().toUpperCase().indexOf("TIEBREAKER") !== 0) continue;
+        out.row = r;
+        for (let c = mc + 1; c < hdr.length; c++) {
+          const nm = String(hdr[c] || "").trim();
+          if (!nm || nm.toUpperCase() === "NAME" || nm.toUpperCase() === "TEAM NAME") continue;
+          const v = parseFloat(String(r[c] || "").trim());
+          if (Number.isFinite(v)) out.byName[nm.toUpperCase()] = v;
+        }
+        break;
+      }
+    }
+    const g25 = getGameInfo(gamesRows || [])[25];
+    if (g25 && String(g25.fs).trim() !== "" && String(g25.ds).trim() !== "") {
+      const a = parseFloat(g25.fs), b = parseFloat(g25.ds);
+      if (Number.isFinite(a) && Number.isFinite(b)) out.actual = a + b;
+    }
+    return out;
+  }
+
+  function renderStandings(rows, picksRows, gamesRows) {
     // Standings layout:
     //   row 4 (idx 3): PLACE | Player | Points | Possible Remaining | Payout
     //   rows 5..104 (idx 4..103) leaderboard rows
@@ -437,12 +468,15 @@
       entries.push({ place, name, pts, rem, pay });
     }
     if (!entries.length) return `<div class="empty">No entries yet.</div>`;
-    entries.sort((a, b) => (b.pts - a.pts) || a.name.localeCompare(b.name));
+    const tb = tiebreakData(picksRows, gamesRows), hasTb = Object.keys(tb.byName).length > 0;
+    entries.forEach(e => { e.tb = tb.byName[e.name.toUpperCase()]; e.diff = (e.tb !== undefined && tb.actual !== null) ? Math.abs(e.tb - tb.actual) : Infinity; });
+    // points first; then (once Monday's game is final) the guess closest to the actual total; then name
+    entries.sort((a, b) => (b.pts - a.pts) || (tb.actual !== null && a.diff !== b.diff ? (a.diff < b.diff ? -1 : 1) : 0) || a.name.localeCompare(b.name));
 
     let html = `<table>
       <thead><tr>
         <th>Place</th><th>Player</th><th style="text-align:right">Pts</th>
-        <th style="text-align:right">Possible</th><th style="text-align:right">Payout</th>
+        <th style="text-align:right">Possible</th>${hasTb ? `<th style="text-align:right">Tiebreaker</th>` : ""}<th style="text-align:right">Payout</th>
       </tr></thead><tbody>`;
     for (const e of entries) {
       const cls = e.place === 1 ? "gold" : e.place === 2 ? "silver" : e.place === 3 ? "bronze" : "";
@@ -453,6 +487,7 @@
         <td class="lb-name">${e.name}</td>
         <td class="lb-pts">${e.pts}</td>
         <td class="lb-rem">${remDisp}</td>
+        ${hasTb ? `<td class="lb-rem">${e.tb !== undefined ? e.tb : ""}${e.tb !== undefined && tb.actual !== null ? ` <span style="font-size:12px">(off by ${e.diff})</span>` : ""}</td>` : ""}
         <td class="lb-pay">${e.pay || ""}</td>
       </tr>`;
     }
@@ -560,6 +595,17 @@
         }
         html += `<td class="${cls}">${pick || "—"}</td>`;
       }
+      html += `</tr>`;
+    }
+    const tbd = tiebreakData(picksRows, gamesRows);
+    if (tbd.row) {
+      const diffs = nameCols.map(nc => { const v = tbd.byName[nc.name.toUpperCase()]; return (v !== undefined && tbd.actual !== null) ? Math.abs(v - tbd.actual) : null; });
+      const best = diffs.filter(d => d !== null).reduce((m, d) => Math.min(m, d), Infinity);
+      html += `<tr class="tb-row"><td></td><td><b>TIEBREAKER</b><br><span style="font-weight:400">Total points in the Monday night game${tbd.actual !== null ? ` (actual: ${tbd.actual})` : " (game not final yet)"}</span></td>`;
+      nameCols.forEach((nc, k) => {
+        const v = tbd.byName[nc.name.toUpperCase()];
+        html += `<td class="tb-cell">${v !== undefined ? v : "&mdash;"}${diffs[k] !== null && diffs[k] === best ? ' <span class="badge-closest">closest</span>' : ""}</td>`;
+      });
       html += `</tr>`;
     }
     return html + `</tbody></table>`;
@@ -806,7 +852,7 @@
       ]);
       cache = { games, standings, picks };
       document.getElementById("games-tbl").innerHTML     = renderGames(games);
-      document.getElementById("standings-tbl").innerHTML = renderStandings(standings);
+      document.getElementById("standings-tbl").innerHTML = renderStandings(standings, picks, games);
       document.getElementById("picks-tbl").innerHTML     = renderPicks(picks, games);
       if (IS_ADMIN) {
         document.getElementById("admin-form-wrap").innerHTML = renderAdminForm(games);
