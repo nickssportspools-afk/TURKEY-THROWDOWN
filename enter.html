@@ -171,6 +171,8 @@
       if (last && last.date === g.date) last.games.push(g); else groups.push({ date: g.date, games: [g] });
     });
     let html = `<div class="box">
+      <label class="field"><span>Your name</span><input type="text" id="person" maxlength="60" autocomplete="name" required>
+        <small style="display:block;margin-top:4px;color:var(--gray);font-size:12px;">First and last name. Only the pool organizer sees this. Your team name (below) is what shows on the standings.</small></label>
       <label class="field"><span>Email</span><input type="email" id="email" autocomplete="email" required></label>
       <label class="field" style="margin:0"><span>Team name</span><input type="text" id="team" maxlength="40" required>
       </label></div>`;
@@ -212,7 +214,7 @@
   const DRAFT_KEY = "tt2026-entry-draft";
   function saveDraft() {
     try {
-      const d = { email: val("email"), team: val("team"), tb: val("tb"), picks: {} };
+      const d = { person: val("person"), email: val("email"), team: val("team"), tb: val("tb"), picks: {} };
       games.forEach(g => { const c = document.querySelector(`input[name="g${g.num}"]:checked`); if (c) d.picks[g.num] = c.value; });
       localStorage.setItem(DRAFT_KEY, JSON.stringify(d));
     } catch (e) {}
@@ -221,7 +223,7 @@
     try {
       const d = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null");
       if (!d) return;
-      ["email", "team", "tb"].forEach(k => { if (d[k]) document.getElementById(k).value = d[k]; });
+      ["person", "email", "team", "tb"].forEach(k => { if (d[k]) document.getElementById(k).value = d[k]; });
       Object.keys(d.picks || {}).forEach(n => {
         const inp = [...document.querySelectorAll(`input[name="g${n}"]`)].find(i => i.value === d.picks[n]);
         if (inp) inp.checked = true; // a pick for a team that's since changed is simply dropped
@@ -241,6 +243,7 @@
   }
 
   async function submit() {
+    const person = document.getElementById("person").value.trim().replace(/\s+/g, " ");
     const email = document.getElementById("email").value.trim();
     const team = document.getElementById("team").value.trim();
     const tb = document.getElementById("tb").value.trim();
@@ -251,6 +254,7 @@
       if (c) picks[g.num] = c.value;
       else { document.getElementById("row-" + g.num).classList.add("missing"); firstMissing = firstMissing || g.num; }
     });
+    if (!person) { document.getElementById("person").focus(); return showMsg("Enter your name."); }
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return showMsg("Enter a valid email address.");
     if (!team) return showMsg("Enter a team name.");
     if (firstMissing) { document.getElementById("row-" + firstMissing).scrollIntoView({ behavior: "smooth", block: "center" }); return; }
@@ -260,7 +264,7 @@
     btn.disabled = true; btn.textContent = "Submitting…";
     try {
       const res = await fetch(SCRIPT_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({ action: "entry", email, team, tiebreaker: tb, picks }) });
+        body: JSON.stringify({ action: "entry", name: person, email, team, tiebreaker: tb, picks }) });
       const data = await res.json();
       if (!data.ok) throw new Error(data.error || "Something went wrong.");
       clearDraft();
