@@ -97,6 +97,37 @@
   .picks-by-entry thead th.c-name { z-index: 4; background: var(--navy); border-right: 2px solid var(--gold); }
   .picks-by-entry tbody tr:hover td.c-name { background: #faf8f1; }
   .picks-by-entry td.tb-cell { font-weight: 700; }
+  .picks-by-entry thead th select.pf { display: block; width: 100%; margin-top: 6px; padding: 4px 4px; font: inherit; font-size: 11px; font-weight: 600; color: #14123a; background: #fff; border: 1px solid var(--gold); border-radius: 6px; text-transform: none; letter-spacing: 0; }
+  .picks-by-entry thead th select.pf.on { background: var(--gold); border-color: var(--gold); }
+  #picks-tbl .picks-tools button { padding: 7px 12px; border: 1px solid var(--line); border-radius: 8px; background: #fff; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; display: none; }
+  #picks-tbl .picks-tools button.show { display: inline-block; }
+
+  /* ----------------- pick analysis ----------------- */
+  .an-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin: 0 0 14px; }
+  .an-stat { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 12px 14px; }
+  .an-stat .k { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--gray); }
+  .an-stat .v { font-size: 15px; font-weight: 700; margin-top: 3px; }
+  .an-stat .d { font-size: 12px; color: var(--gray); margin-top: 2px; }
+  .an-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 12px; }
+  .an-game { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 12px 14px; }
+  .an-head { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--gray); margin-bottom: 8px; }
+  .an-head b { color: #14123a; font-size: 13px; }
+  .an-row { display: flex; align-items: baseline; gap: 8px; padding: 3px 0; font-size: 14px; }
+  .an-row .t { flex: 1; font-weight: 600; min-width: 0; }
+  .an-row .sp { color: var(--gray); font-weight: 600; white-space: nowrap; }
+  .an-row .n { font-weight: 800; font-variant-numeric: tabular-nums; min-width: 26px; text-align: right; }
+  .an-row .pc { color: var(--gray); font-variant-numeric: tabular-nums; min-width: 40px; text-align: right; font-size: 13px; }
+  .an-row.win .t { color: var(--green); }
+  .an-row .chk { color: var(--green); font-weight: 800; }
+  .an-bar { display: flex; height: 8px; border-radius: 999px; overflow: hidden; background: var(--line); margin: 6px 0 4px; }
+  .an-bar i { display: block; height: 100%; }
+  .an-bar i.a { background: var(--navy); }
+  .an-bar i.b { background: var(--gold); }
+  .an-foot { font-size: 12px; color: var(--gray); margin-top: 4px; }
+  .an-tag { display: inline-block; padding: 0 6px; border-radius: 999px; font-size: 10px; font-weight: 800; letter-spacing: .04em; vertical-align: 1px; }
+  .an-tag.fav { background: #fdf3cf; color: #7a5b00; }
+  .an-tag.dog { background: #ececf3; color: #4a4a68; }
+
   /* the green/red/gray grading must show on the pick cells */
   #picks-tbl tbody td.pick-correct { background: var(--green-bg) !important; }
   #picks-tbl tbody td.pick-wrong   { background: var(--red-bg)   !important; }
@@ -201,6 +232,7 @@
     <button data-tab="rules"     class="active" role="tab">Rules</button>
     <button data-tab="standings"            role="tab">Standings</button>
     <button data-tab="picks"                role="tab">Picks</button>
+    <button data-tab="analysis"             role="tab">Analysis</button>
     <button data-tab="games"                role="tab">Games</button>
     <button data-tab="admin"                role="tab">Admin</button>
   </div>
@@ -223,6 +255,12 @@
     <h2>Picks</h2>
     <p class="subtle">Each entrant's picks. Green = covered, red = missed, gray = push, blank = ungraded.</p>
     <div class="card"><div class="table-wrap" id="picks-tbl"><div class="empty">Loading picks…</div></div></div>
+  </section>
+
+  <section id="panel-analysis" class="panel">
+    <h2>Pick Analysis</h2>
+    <p class="hint" style="color:var(--gray);margin:0 0 12px">How many entries picked each team in each game. Updates with the picks and scores.</p>
+    <div id="analysis-tbl"><div class="empty">Loading analysis…</div></div>
   </section>
 
   <section id="panel-games" class="panel">
@@ -379,7 +417,13 @@
     if (C.home >= 0 && C.away >= 0) {
       const home = (r[C.home] || "").trim(), away = (r[C.away] || "").trim();
       const hs = C.homeSp >= 0 ? num(r[C.homeSp]) : 0, as_ = C.awaySp >= 0 ? num(r[C.awaySp]) : 0;
-      const awayFav = as_ > 0 && hs === 0;
+      // the favorite is the side with the MINUS spread (same rule as the entry form); only if neither has a minus, the only side with a number
+      const sg = v => { const n = parseFloat(String(v == null ? "" : v).replace(/[^\d.\-]/g, "")); return Number.isFinite(n) ? n : null; };
+      const hSg = C.homeSp >= 0 ? sg(r[C.homeSp]) : null, aSg = C.awaySp >= 0 ? sg(r[C.awaySp]) : null;
+      let awayFav;
+      if (hSg !== null && hSg < 0) awayFav = false;
+      else if (aSg !== null && aSg < 0) awayFav = true;
+      else awayFav = as_ > 0 && hs === 0;
       const line = Math.max(hs, as_);
       return { fav: awayFav ? away : home, dog: awayFav ? home : away, spread: line ? String(line) : "", home };
     }
@@ -491,6 +535,82 @@
     return html + `</tbody></table>`;
   }
 
+  // ===== Pick analysis: how many entries took each side of each game =====
+  function renderAnalysis(picksRows, gamesRows) {
+    const esc = t => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
+    if (!picksRows || !picksRows.length) return `<div class="empty">No data.</div>`;
+    const hdrIdx = picksRows.findIndex(r => (r || []).some(v => ["MATCHUP", "TEAM NAME"].includes(String(v || "").trim().toUpperCase())));
+    if (hdrIdx < 0) return `<div class="empty">Header row not found on Picks tab.</div>`;
+    const hdr = picksRows[hdrIdx], hdrU = hdr.map(v => String(v || "").trim().toUpperCase());
+    const matchupCol = hdrU.indexOf("MATCHUP") >= 0 ? hdrU.indexOf("MATCHUP") : 3;
+    const fixed = hdrU.map((v, i) => ["DATE", "DAY", "SPORT", "MATCHUP", "SPREAD"].includes(v) ? i : -1);
+    const firstName = Math.max(matchupCol, ...fixed) + 1;
+    const rowsByGame = {};
+    for (let i = hdrIdx + 1; i < picksRows.length; i++) {
+      const r = picksRows[i] || [], n = parseInt(r[0]);
+      if (!Number.isFinite(n) || n < 1 || n > 25) break;
+      rowsByGame[n] = r;
+    }
+    const info = getGameInfo(gamesRows || []);
+    const U = v => String(v || "").trim().toUpperCase();
+    // entrants who actually have picks
+    const people = [];
+    for (let c = firstName; c < hdr.length; c++) {
+      const nm = String(hdr[c] || "").trim();
+      if (!nm || U(nm) === "NAME" || U(nm) === "TEAM NAME") continue;
+      if (Object.values(rowsByGame).some(r => String(r[c] || "").trim())) people.push({ name: nm, col: c, against: 0, total: 0 });
+    }
+    if (!people.length) return `<div class="empty">Pick analysis appears once the picks are revealed at the deadline.</div>`;
+
+    const games = [];
+    for (let n = 1; n <= 25; n++) {
+      const g = info[n], r = rowsByGame[n];
+      if (!g || !r) continue;
+      const home = g.home || g.fav, away = home === g.fav ? g.dog : g.fav;
+      const picked = { [U(home)]: [], [U(away)]: [] };
+      people.forEach(pp => { const v = U(r[pp.col]); if (picked[v]) picked[v].push(pp); });
+      const nh = picked[U(home)].length, na = picked[U(away)].length, tot = nh + na;
+      if (!tot) continue;
+      games.push({ n, g, home, away, picked, nh, na, tot });
+    }
+    // who went against the crowd most
+    games.forEach(x => {
+      if (x.nh === x.na) return;
+      const minority = x.nh < x.na ? x.picked[U(x.home)] : x.picked[U(x.away)];
+      people.forEach(pp => { pp.total++; });
+      minority.forEach(pp => { pp.against++; });
+    });
+    const share = x => Math.max(x.nh, x.na) / x.tot;
+    const most = games.slice().sort((a, b) => share(b) - share(a))[0];
+    const split = games.slice().sort((a, b) => share(a) - share(b))[0];
+    const contr = people.slice().sort((a, b) => b.against - a.against)[0];
+    const sideName = x => x.nh >= x.na ? x.home : x.away;
+    const pct = (a, t) => t ? Math.round(a * 100 / t) + "%" : "0%";
+    const sp = (g, team) => g.spread ? (U(team) === U(g.fav) ? " (-" + g.spread + ")" : " (+" + g.spread + ")") : "";
+    const tag = (g, team) => g.spread ? `<span class="an-tag ${U(team) === U(g.fav) ? "fav" : "dog"}">${U(team) === U(g.fav) ? "FAV" : "DOG"}</span>` : "";
+
+    let html = `<div class="an-stats">` +
+      `<div class="an-stat"><div class="k">Most one-sided pick</div><div class="v">${esc(sideName(most))}</div><div class="d">Game ${most.n}: ${Math.max(most.nh, most.na)} of ${most.tot} entries (${pct(Math.max(most.nh, most.na), most.tot)})</div></div>` +
+      `<div class="an-stat"><div class="k">Most split game</div><div class="v">${esc(split.home)} vs ${esc(split.away)}</div><div class="d">Game ${split.n}: ${split.nh} to ${split.na}</div></div>` +
+      `<div class="an-stat"><div class="k">Biggest contrarian</div><div class="v">${esc(contr.name)}</div><div class="d">${contr.against} picks against the majority</div></div>` +
+      `<div class="an-stat"><div class="k">Entries with picks</div><div class="v">${people.length}</div><div class="d">Counts below are out of the entries that picked each game</div></div>` +
+      `</div><div class="an-grid">`;
+    for (const x of games) {
+      const g = x.g, ats = g.ats;
+      const row = (team, n) => {
+        const win = ats && ats !== "PUSH" && U(ats) === U(team);
+        return `<div class="an-row${win ? " win" : ""}"><span class="t">${esc(team)}<span class="sp">${esc(sp(g, team))}</span> ${tag(g, team)}${win ? ' <span class="chk">&#10003;</span>' : ""}</span><span class="n">${n}</span><span class="pc">${pct(n, x.tot)}</span></div>`;
+      };
+      const wins = ats && ats !== "PUSH" ? (U(ats) === U(x.home) ? x.nh : U(ats) === U(x.away) ? x.na : null) : null;
+      const foot = ats === "PUSH" ? "Push" : wins !== null ? `${wins} of ${x.tot} got it right (${pct(wins, x.tot)})` : "Not final yet";
+      html += `<div class="an-game"><div class="an-head"><b>G${x.n}</b>${g.sport ? `<span class="pill pill-${esc(g.sport)}">${esc(g.sport)}</span>` : ""}<span>${esc([g.day, g.date].filter(Boolean).join(" "))}</span></div>` +
+        row(x.home, x.nh) + row(x.away, x.na) +
+        `<div class="an-bar"><i class="a" style="width:${x.nh * 100 / x.tot}%"></i><i class="b" style="width:${x.na * 100 / x.tot}%"></i></div>` +
+        `<div class="an-foot">${foot}</div></div>`;
+    }
+    return html + `</div>`;
+  }
+
   function renderPicks(picksRows, gamesRows) {
     // Picks layout (new):
     //   header row: # | Date | Sport | Matchup | Spread | TEAM NAME × N
@@ -574,10 +694,14 @@
     if (!hasEntrants) {
       html += `<div style="padding:12px 16px;background:#fff7d6;border-left:4px solid var(--gold);margin:0 0 12px;font-size:13px;color:var(--gray)">No entries yet. Picks appear here after the entry deadline.</div>`;
     } else {
-      html += `<div class="picks-tools"><input id="picks-find" type="search" placeholder="Find your entry&hellip;" autocomplete="off"><span id="picks-count">${people.length} entries</span></div>`;
+      html += `<div class="picks-tools"><input id="picks-find" type="search" placeholder="Find your entry&hellip;" autocomplete="off"><span id="picks-count">${people.length} entries</span><button type="button" id="picks-clear">Clear filters</button></div>`;
     }
     html += `<div class="picks-scroll"><table class="picks-by-entry"><thead><tr><th class="c-name"><b>Entry</b></th>`;
-    for (const g of gameCols) html += `<th><b>G${g.gnum}</b><span class="gm">${esc(g.matchup)}</span></th>`;
+    for (const g of gameCols) {
+      const opts = [...new Set(people.map(pp => (g.row[pp.col] || "").trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+      const sel = opts.length ? `<select class="pf" data-g="${g.gnum}" aria-label="Filter game ${g.gnum}"><option value="">All picks</option>${opts.map(o => `<option value="${esc(o)}">${esc(o)}</option>`).join("")}</select>` : "";
+      html += `<th><b>G${g.gnum}</b><span class="gm">${esc(g.matchup)}</span>${sel}</th>`;
+    }
     if (tbd.row) html += `<th><b>Tiebreaker</b><span class="gm">Total points in the Monday night game${tbd.actual !== null ? " (actual: " + tbd.actual + ")" : " (not final yet)"}</span></th>`;
     html += `</tr></thead><tbody>`;
     people.forEach((pp, k) => {
@@ -590,7 +714,7 @@
           else if (g.ats === pick) cls = "pick-correct";
           else cls = "pick-wrong";
         }
-        html += `<td class="${cls}">${pick ? esc(pick) : "&mdash;"}</td>`;
+        html += `<td class="${cls}" data-g="${g.gnum}" data-pick="${esc(pick)}">${pick ? esc(pick) : "&mdash;"}</td>`;
       }
       if (tbd.row) html += `<td class="tb-cell">${pp.tb !== undefined ? pp.tb : "&mdash;"}${diffs[k] !== null && diffs[k] === best ? ' <span class="badge-closest">closest</span>' : ""}</td>`;
       html += `</tr>`;
@@ -600,19 +724,36 @@
 
   // "Find your entry" box: filters the Picks rows as you type, and survives the once-a-minute refresh
   let picksFilter = "";
+  let picksColFilters = {};   // { gameNumber: "TEAM NAME" }, kept across the automatic refresh
   function applyPicksFilter() {
     const inp = document.getElementById("picks-find");
     if (!inp) return;
     inp.value = picksFilter;
     const q = picksFilter.trim().toLowerCase();
+    // restore each game's dropdown (drop a saved choice that no longer exists)
+    document.querySelectorAll("#picks-tbl select.pf").forEach(sel => {
+      const g = sel.dataset.g, want = picksColFilters[g] || "";
+      sel.value = want;
+      if (sel.value !== want) { delete picksColFilters[g]; sel.value = ""; }
+      sel.classList.toggle("on", !!sel.value);
+      sel.onchange = () => { if (sel.value) picksColFilters[g] = sel.value; else delete picksColFilters[g]; applyPicksFilter(); };
+    });
+    const active = Object.keys(picksColFilters);
     let shown = 0;
     document.querySelectorAll("#picks-tbl tbody tr").forEach(tr => {
-      const ok = !q || (tr.dataset.name || "").indexOf(q) >= 0;
+      let ok = !q || (tr.dataset.name || "").indexOf(q) >= 0;
+      if (ok) for (const g of active) {
+        const td = tr.querySelector('td[data-g="' + g + '"]');
+        if (!td || td.dataset.pick !== picksColFilters[g]) { ok = false; break; }
+      }
       tr.style.display = ok ? "" : "none"; if (ok) shown++;
     });
     const total = document.querySelectorAll("#picks-tbl tbody tr").length;
     const cnt = document.getElementById("picks-count");
-    if (cnt) cnt.textContent = q ? `${shown} of ${total} entries` : `${total} entries`;
+    const filtering = !!q || active.length > 0;
+    if (cnt) cnt.textContent = filtering ? `${shown} of ${total} entries` : `${total} entries`;
+    const clr = document.getElementById("picks-clear");
+    if (clr) { clr.classList.toggle("show", filtering); clr.onclick = () => { picksFilter = ""; picksColFilters = {}; applyPicksFilter(); }; }
     inp.oninput = () => { picksFilter = inp.value; applyPicksFilter(); };
   }
 
@@ -859,6 +1000,7 @@
       document.getElementById("games-tbl").innerHTML     = renderGames(games);
       document.getElementById("standings-tbl").innerHTML = renderStandings(standings, picks, games);
       document.getElementById("picks-tbl").innerHTML     = renderPicks(picks, games);
+      document.getElementById("analysis-tbl").innerHTML  = renderAnalysis(picks, games);
       applyPicksFilter();
       if (IS_ADMIN) {
         document.getElementById("admin-form-wrap").innerHTML = renderAdminForm(games);
@@ -870,7 +1012,7 @@
     } catch (e) {
       console.error(e);
       const msg = `<div class="err">Failed to load: ${e.message}. The Sheet may not be shared as "Anyone with the link" or its tabs may not be named exactly Games / Picks / Standings.</div>`;
-      ["games-tbl","standings-tbl","picks-tbl","admin-form-wrap"].forEach(id => {
+      ["games-tbl","standings-tbl","picks-tbl","analysis-tbl","admin-form-wrap"].forEach(id => {
         const el = document.getElementById(id);
         if (el && el.querySelector(".empty")) el.innerHTML = msg;
       });
